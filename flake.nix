@@ -20,7 +20,6 @@
           buildInputs = with pkgs; [
             awscli2
             terraform
-            python3
             zip
           ];
 
