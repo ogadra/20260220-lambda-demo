@@ -2,9 +2,19 @@ pre-commit:
   commands:
     gitleaks:
       run: gitleaks protect --staged
-    checkov:
+    checkov-vpc-lambda:
+      root: "vpc-lambda-eip-demo/"
       glob: "*.tf"
-      run: checkov -d . --framework terraform --compact --quiet
-    tflint:
+      run: checkov -d .
+    checkov-slidev:
+      root: "slidev/terraform/"
       glob: "*.tf"
-      run: tflint --recursive
+      run: checkov -d .
+    tflint-vpc-lambda:
+      root: "vpc-lambda-eip-demo/"
+      glob: "*.tf"
+      run: tflint
+    tflint-slidev:
+      root: "slidev/terraform/"
+      glob: "*.tf"
+      run: tflint

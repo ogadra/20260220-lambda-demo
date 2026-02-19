@@ -11,4 +11,5 @@ tflint:
 	tflint --recursive
 
 checkov:
-	checkov -d . --framework terraform --compact --quiet
+	checkov -d ./vpc-lambda-eip-demo
+	checkov -d ./slidev/terraform
