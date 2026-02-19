@@ -2,3 +2,20 @@ framework:
   - terraform
 compact: true
 quiet: true
+skip-check:
+  # DynamoDB
+  - CKV_AWS_28   # PITR not needed: ws_connections and sessions are ephemeral with TTL
+  - CKV_AWS_119  # CMK encryption not needed: tables contain no sensitive data (connection IDs, session tokens)
+  - CKV2_AWS_16  # Auto scaling not needed: PAY_PER_REQUEST handles demo-scale traffic
+  # Lambda
+  - CKV_AWS_50   # X-Ray tracing not needed: demo Lambda functions are simple single-purpose handlers
+  - CKV_AWS_272  # Code signing not needed: deployment is done via local terraform apply, not CI/CD
+  - CKV_AWS_116  # DLQ not needed: all Lambda functions are synchronous API Gateway handlers
+  - CKV_AWS_115  # Reserved concurrency not needed: API Gateway throttling controls invocation rate
+  - CKV_AWS_117  # VPC not needed: Lambda accesses only DynamoDB, API Gateway, and Secrets Manager via public endpoints
+  - CKV_AWS_173  # Env var KMS encryption not needed: env vars contain only resource names and ARNs, no secrets
+  # Secrets Manager
+  - CKV_AWS_149  # CMK encryption not needed: using default AWS managed key, secret contains only a bcrypt hash
+  # API Gateway
+  - CKV2_AWS_51  # Access logging not needed: demo-purpose API with no compliance requirement
+  - CKV_AWS_76   # Access logging not needed: same as CKV2_AWS_51, duplicate check for API Gateway stages

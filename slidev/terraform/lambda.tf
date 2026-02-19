@@ -70,12 +70,6 @@ data "archive_file" "ws" {
 }
 
 resource "aws_lambda_function" "ws" {
-  #checkov:skip=CKV_AWS_50:X-Ray tracing not needed for demo
-  #checkov:skip=CKV_AWS_272:Code signing not needed for demo
-  #checkov:skip=CKV_AWS_116:DLQ not needed for synchronous WebSocket handler
-  #checkov:skip=CKV_AWS_115:Concurrent execution limit is managed by API Gateway throttling
-  #checkov:skip=CKV_AWS_117:VPC not required for DynamoDB and API Gateway access
-  #checkov:skip=CKV_AWS_173:Env vars contain no secrets
   for_each         = local.ws_handlers
   filename         = data.archive_file.ws[each.key].output_path
   function_name    = "${var.project}-ws-${each.key}"
