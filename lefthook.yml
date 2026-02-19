@@ -5,3 +5,6 @@ pre-commit:
     checkov:
       glob: "*.tf"
       run: checkov -d . --framework terraform --compact --quiet
+    tflint:
+      glob: "*.tf"
+      run: tflint --recursive

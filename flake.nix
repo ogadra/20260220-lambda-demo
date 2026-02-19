@@ -24,6 +24,7 @@
             gitleaks
             lefthook
             checkov
+            tflint
           ];
 
           shellHook = ''
