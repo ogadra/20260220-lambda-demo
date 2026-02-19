@@ -381,6 +381,10 @@ li {
 </style>
 
 ---
+
+<IvsPlayer />
+
+---
 layout: image-x
 image: https://media.ogadra.com/misskey/drive/b7f08bb1-df92-45c3-855d-521eb9859015.gif
 imageOrder: 2
