@@ -29,10 +29,12 @@ resource "aws_iam_policy" "ws_lambda_dynamodb" {
           "dynamodb:GetItem",
           "dynamodb:DeleteItem",
           "dynamodb:Query",
+          "dynamodb:UpdateItem",
         ]
         Resource = [
           aws_dynamodb_table.ws_connections.arn,
           aws_dynamodb_table.sessions.arn,
+          aws_dynamodb_table.poll_votes.arn,
         ]
       }
     ]

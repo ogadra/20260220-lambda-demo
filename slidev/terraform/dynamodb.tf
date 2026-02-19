@@ -20,6 +20,28 @@ resource "aws_dynamodb_table" "ws_connections" {
   }
 }
 
+resource "aws_dynamodb_table" "poll_votes" {
+  name         = "${var.project}-poll-votes"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "pk"
+  range_key    = "sk"
+
+  attribute {
+    name = "pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+}
+
 resource "aws_dynamodb_table" "sessions" {
   name         = "${var.project}-sessions"
   billing_mode = "PAY_PER_REQUEST"

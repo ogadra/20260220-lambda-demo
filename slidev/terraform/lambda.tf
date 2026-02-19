@@ -21,6 +21,7 @@ resource "aws_lambda_function" "ws" {
     variables = {
       CONNECTIONS_TABLE_NAME = aws_dynamodb_table.ws_connections.name
       SESSION_TABLE_NAME     = aws_dynamodb_table.sessions.name
+      POLL_TABLE_NAME        = aws_dynamodb_table.poll_votes.name
     }
   }
 }
