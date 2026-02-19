@@ -31,3 +31,38 @@ resource "aws_apigatewayv2_route" "ws" {
   route_key = each.value.route_key
   target    = "integrations/${aws_apigatewayv2_integration.ws[each.key].id}"
 }
+
+# --- HTTP API Gateway (Login) ---
+
+resource "aws_apigatewayv2_api" "http" {
+  name          = "${var.project}-http"
+  protocol_type = "HTTP"
+}
+
+resource "aws_apigatewayv2_stage" "http" {
+  api_id      = aws_apigatewayv2_api.http.id
+  name        = "$default"
+  auto_deploy = true
+}
+
+resource "aws_apigatewayv2_integration" "login" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.login.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "login_get" {
+  #checkov:skip=CKV_AWS_309:Public login endpoint for presenter authentication
+  api_id    = aws_apigatewayv2_api.http.id
+  route_key = "GET /login"
+  target    = "integrations/${aws_apigatewayv2_integration.login.id}"
+}
+
+resource "aws_apigatewayv2_route" "login_post" {
+  #checkov:skip=CKV_AWS_309:Public login endpoint for presenter authentication
+  api_id    = aws_apigatewayv2_api.http.id
+  route_key = "POST /login"
+  target    = "integrations/${aws_apigatewayv2_integration.login.id}"
+}
