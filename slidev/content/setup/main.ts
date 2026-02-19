@@ -69,6 +69,7 @@ export function connectWebSocket(onUpdate: (data: Partial<object>) => void): voi
 	};
 
 	ws.onclose = () => {
+		connected = false;
 		// Disconnected状態の場合は自動再接続しない
 		if (connectionStatus.value === ConnectionStatusEnum.Disconnected) {
 			return;
