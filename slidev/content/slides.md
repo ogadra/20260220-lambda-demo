@@ -176,9 +176,6 @@ p {
   :maxChoices="1"
 />
 
-
-</div>
-
 <style>
 li {
   font-size: 2rem !important;
