@@ -21,12 +21,23 @@ def _get_my_choices(poll_id, visitor_id):
     ]
 
 
-def _send_to_caller(event, payload):
-    connection_id = event["requestContext"]["connectionId"]
+_apigw_client_cache = {}
+
+
+def _get_apigw_client(event):
     domain = event["requestContext"]["domainName"]
     stage = event["requestContext"]["stage"]
     endpoint = f"https://{domain}/{stage}"
-    apigw = boto3.client("apigatewaymanagementapi", endpoint_url=endpoint)
+    if endpoint not in _apigw_client_cache:
+        _apigw_client_cache[endpoint] = boto3.client(
+            "apigatewaymanagementapi", endpoint_url=endpoint
+        )
+    return _apigw_client_cache[endpoint]
+
+
+def _send_to_caller(event, payload):
+    connection_id = event["requestContext"]["connectionId"]
+    apigw = _get_apigw_client(event)
     apigw.post_to_connection(
         ConnectionId=connection_id,
         Data=json.dumps(payload).encode("utf-8"),
