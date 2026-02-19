@@ -1,13 +1,16 @@
+data "external" "content_hash" {
+  program = ["sh", "${path.module}/content-hash.sh"]
+}
+
 resource "terraform_data" "slidev_deploy" {
   triggers_replace = [
-    filemd5("${path.module}/../content/slides.md"),
-    filemd5("${path.module}/../content/package.json"),
-    filemd5("${path.module}/../content/style.css"),
+    data.external.content_hash.result["md5"],
+    terraform_data.ivs_tokens.id,
   ]
 
   provisioner "local-exec" {
     working_dir = "${path.module}/../content"
-    command     = "pnpm install && pnpm run build"
+    command     = "VITE_IVS_PARTICIPANT_TOKEN='${trimspace(data.local_file.subscriber_token.content)}' pnpm run build"
   }
 
   provisioner "local-exec" {
