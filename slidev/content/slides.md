@@ -21,6 +21,7 @@ canvasWidth: 960
 <div style="position: absolute; top: 50%; left: 25%; transform: translate(-50%, -50%); text-align: center;">
   <img src="./imgs/qr.png" alt="このスライドのQRコード" style="width: 300px;" />
   <p style="font-size: 1rem !important; color: #4ec9b0; margin-top: 0.5rem;">slide.ogadra.com</p>
+  <div style="margin-top: 0.5rem;"><ViewerCount /></div>
 </div>
 
 <div style="position: absolute; top: 50%; right: 5%; transform: translateY(-50%); text-align: center;">
