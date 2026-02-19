@@ -135,19 +135,19 @@ def _broadcast(event, message, exclude_connection_id=None):
 
     stale = []
     for item in connections.get("Items", []):
-        cid = item["connectionId"]
-        if exclude_connection_id and cid == exclude_connection_id:
+        connection_id = item["connectionId"]
+        if exclude_connection_id and connection_id == exclude_connection_id:
             continue
         try:
             apigw.post_to_connection(
-                ConnectionId=cid,
+                ConnectionId=connection_id,
                 Data=message.encode("utf-8"),
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "GoneException":
-                stale.append(cid)
+                stale.append(connection_id)
             else:
                 raise
 
-    for cid in stale:
-        connections_table.delete_item(Key={"room": ROOM, "connectionId": cid})
+    for connection_id in stale:
+        connections_table.delete_item(Key={"room": ROOM, "connectionId": connection_id})
