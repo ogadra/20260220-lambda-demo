@@ -11,3 +11,7 @@
 
 # direnv
 .direnv/
+
+# Slidev
+node_modules/
+slidev/dist/

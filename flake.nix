@@ -22,6 +22,7 @@
             terraform
             zip
             gitleaks
+            pnpm
             lefthook
             checkov
             tflint
