@@ -25,15 +25,10 @@ resource "aws_cloudfront_distribution" "slidev" {
   default_root_object = "index.html"
   web_acl_id          = aws_wafv2_web_acl.slidev.arn
 
+  # /login -> HTTP API Gateway
   origin {
-    domain_name              = aws_s3_bucket.slidev.bucket_regional_domain_name
-    origin_id                = aws_s3_bucket.slidev.id
-    origin_access_control_id = aws_cloudfront_origin_access_control.slidev.id
-  }
-
-  origin {
-    domain_name = "${aws_apigatewayv2_api.websocket.id}.execute-api.ap-northeast-1.amazonaws.com"
-    origin_id   = "websocket-api"
+    domain_name = "${aws_apigatewayv2_api.login.id}.execute-api.ap-northeast-1.amazonaws.com"
+    origin_id   = local.cf_origin_id.login
     custom_origin_config {
       http_port              = 80
       https_port             = 443
@@ -42,23 +37,11 @@ resource "aws_cloudfront_distribution" "slidev" {
     }
   }
 
-  origin {
-    domain_name = "${aws_apigatewayv2_api.http.id}.execute-api.ap-northeast-1.amazonaws.com"
-    origin_id   = "http-api"
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "https-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
-  }
-
-  # Login API Gateway behavior
   ordered_cache_behavior {
     path_pattern           = "/login"
     allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
     cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "http-api"
+    target_origin_id       = local.cf_origin_id.login
     viewer_protocol_policy = "https-only"
     compress               = false
 
@@ -66,17 +49,35 @@ resource "aws_cloudfront_distribution" "slidev" {
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
   }
 
-  # WebSocket API Gateway behavior
+  # /ws -> WebSocket API Gateway
+  origin {
+    domain_name = "${aws_apigatewayv2_api.websocket.id}.execute-api.ap-northeast-1.amazonaws.com"
+    origin_id   = local.cf_origin_id.websocket
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
   ordered_cache_behavior {
     path_pattern           = "/ws"
     allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
     cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "websocket-api"
+    target_origin_id       = local.cf_origin_id.websocket
     viewer_protocol_policy = "https-only"
     compress               = false
 
     cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+  }
+
+  # /* -> S3 (static files)
+  origin {
+    domain_name              = aws_s3_bucket.slidev.bucket_regional_domain_name
+    origin_id                = aws_s3_bucket.slidev.id
+    origin_access_control_id = aws_cloudfront_origin_access_control.slidev.id
   }
 
   default_cache_behavior {

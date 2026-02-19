@@ -201,5 +201,5 @@ resource "aws_lambda_permission" "login_apigw" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.login.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*/login"
+  source_arn    = "${aws_apigatewayv2_api.login.execution_arn}/*/*/login"
 }
