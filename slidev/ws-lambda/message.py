@@ -46,7 +46,8 @@ def handle_slide_sync(event, body_str):
 def handle_poll_get(event, body):
     connection_id = event["requestContext"]["connectionId"]
     poll_id = body.get("pollId")
-    if not poll_id:
+    visitor_id = body.get("visitorId")
+    if not poll_id or not visitor_id:
         return {"statusCode": 200, "body": "Invalid poll_get"}
 
     meta_key = {"pollId": poll_id, "connectionId": "META"}
@@ -56,6 +57,19 @@ def handle_poll_get(event, body):
         return {"statusCode": 200, "body": "Poll not found"}
 
     votes = {k: int(v) for k, v in meta.get("votes", {}).items()}
+
+    # Look up this visitor's existing votes
+    existing = poll_table.query(
+        KeyConditionExpression="pollId = :pid AND begins_with(connectionId, :prefix)",
+        ExpressionAttributeValues={
+            ":pid": poll_id,
+            ":prefix": f"{visitor_id}#",
+        },
+    )
+    my_choices = [
+        item["connectionId"].split("#", 1)[1]
+        for item in existing.get("Items", [])
+    ]
 
     domain = event["requestContext"]["domainName"]
     stage = event["requestContext"]["stage"]
@@ -68,6 +82,7 @@ def handle_poll_get(event, body):
             "type": "poll_state",
             "pollId": poll_id,
             "votes": votes,
+            "myChoices": my_choices,
         }).encode("utf-8"),
     )
 
@@ -77,11 +92,12 @@ def handle_poll_get(event, body):
 def handle_poll_vote(event, body):
     connection_id = event["requestContext"]["connectionId"]
     poll_id = body.get("pollId")
+    visitor_id = body.get("visitorId")
     choice = body.get("choice")
     options = body.get("options", [])
     max_choices = body.get("maxChoices", 1)
 
-    if not poll_id or not choice:
+    if not poll_id or not visitor_id or not choice:
         return {"statusCode": 200, "body": "Invalid poll_vote"}
 
     ttl_value = int(time.time()) + POLL_TTL_SECONDS
@@ -112,14 +128,14 @@ def handle_poll_vote(event, body):
         KeyConditionExpression="pollId = :pid AND begins_with(connectionId, :prefix)",
         ExpressionAttributeValues={
             ":pid": poll_id,
-            ":prefix": f"{connection_id}#",
+            ":prefix": f"{visitor_id}#",
         },
     )
     if existing_votes["Count"] >= meta_max_choices:
         return {"statusCode": 200, "body": "Max choices reached"}
 
     # Check for duplicate vote on same choice (conditional put)
-    vote_key = {"pollId": poll_id, "connectionId": f"{connection_id}#{choice}"}
+    vote_key = {"pollId": poll_id, "connectionId": f"{visitor_id}#{choice}"}
     try:
         poll_table.put_item(
             Item={**vote_key, "ttl": ttl_value},

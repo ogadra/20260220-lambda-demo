@@ -3,6 +3,17 @@ import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { onWsMessage, sendWsMessage } from "../setup/main";
 import { connectionStatus, ConnectionStatusEnum } from "../setup/connectionState";
 
+function getVisitorId(): string {
+  const key = "slide_visitor";
+  const match = document.cookie.match(new RegExp(`(?:^|; )${key}=([^;]*)`));
+  if (match) return match[1];
+  const id = crypto.randomUUID();
+  document.cookie = `${key}=${id}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
+  return id;
+}
+
+const visitorId = getVisitorId();
+
 interface PollOption {
   id: string;
   label: string;
@@ -44,6 +55,7 @@ function selectOption(id: string) {
   sendWsMessage({
     type: "poll_vote",
     pollId: props.pollId,
+    visitorId,
     choice: id,
     options: props.options.map((o) => o.id),
     maxChoices: props.maxChoices,
@@ -51,7 +63,7 @@ function selectOption(id: string) {
 }
 
 function fetchPollState() {
-  sendWsMessage({ type: "poll_get", pollId: props.pollId });
+  sendWsMessage({ type: "poll_get", pollId: props.pollId, visitorId });
 }
 
 let unsubscribe: (() => void) | null = null;
@@ -61,8 +73,12 @@ onMounted(() => {
   unsubscribe = onWsMessage((data) => {
     if (data.type === "poll_state" && data.pollId === props.pollId) {
       votes.value = (data.votes as Record<string, number>) || {};
-      // Move loading items to selected on response
-      if (loading.value.size > 0) {
+      // Restore selections from server (e.g. after reload)
+      if (Array.isArray(data.myChoices)) {
+        selected.value = new Set(data.myChoices as string[]);
+        loading.value = new Set();
+      } else if (loading.value.size > 0) {
+        // Move loading items to selected on vote response
         selected.value = new Set([...selected.value, ...loading.value]);
         loading.value = new Set();
       }
