@@ -63,7 +63,7 @@ resource "aws_cloudfront_distribution" "slidev" {
 
   ordered_cache_behavior {
     path_pattern           = "/ws"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
+    allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = local.cf_origin_id.websocket
     viewer_protocol_policy = "https-only"
