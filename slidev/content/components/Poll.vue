@@ -22,7 +22,6 @@ interface PollOption {
 const props = withDefaults(
   defineProps<{
     pollId: string;
-    question: string;
     options: PollOption[];
     maxChoices?: number;
   }>(),
@@ -125,7 +124,6 @@ onUnmounted(() => {
 
 <template>
   <div class="poll-container">
-    <h3 class="poll-question">{{ question }}</h3>
     <p v-if="maxChoices > 1" class="poll-hint">
       最大{{ maxChoices }}つ選択できます（残り{{ remainingChoices }}）
     </p>
@@ -167,13 +165,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 1.5rem;
-}
-
-.poll-question {
-  font-size: 1.6rem;
-  color: #4ec9b0;
-  margin: 0;
+  padding: 1rem;
 }
 
 .poll-hint {
@@ -195,7 +187,7 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   align-items: center;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   border: 2px solid #555;
   border-radius: 8px;
   background: transparent;

@@ -72,9 +72,10 @@ li {
 </style>
 ---
 
+## 時間がないのでアンケート！聞きたいテーマは？
+
 <Poll
   pollId="theme"
-  question="時間がないのでアンケートします！聞きたいテーマは？"
   :options='[{
     "id":"adapter",
     "label":"aws-lambda-adapter",
@@ -154,9 +155,10 @@ p {
 
 ---
 
+## IaCツール、何使ってる？
+
 <Poll
   pollId="iac"
-  question="IaCツール、何使ってる？"
   :options='[{
     "id":"sam",
     "label":"AWS SAM",
