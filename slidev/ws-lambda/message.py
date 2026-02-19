@@ -44,11 +44,11 @@ def handle_slide_sync(event, body_str):
 def handle_poll_vote(event, body):
     connection_id = event["requestContext"]["connectionId"]
     poll_id = body.get("pollId")
-    choices = body.get("choices", [])
+    choice = body.get("choice")
     options = body.get("options", [])
     max_choices = body.get("maxChoices", 1)
 
-    if not poll_id or not choices:
+    if not poll_id or not choice:
         return {"statusCode": 200, "body": "Invalid poll_vote"}
 
     ttl_value = int(time.time()) + POLL_TTL_SECONDS
@@ -71,45 +71,47 @@ def handle_poll_vote(event, body):
         if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
             raise
 
-    # Validate max_choices against META
+    # Check max_choices limit via existing vote count for this connection
     meta = poll_table.get_item(Key=meta_key)["Item"]
-    if len(choices) > meta.get("maxChoices", 1):
-        return {"statusCode": 200, "body": "Too many choices"}
+    meta_max_choices = meta.get("maxChoices", 1)
 
-    # Check for duplicate vote
-    existing = poll_table.get_item(
-        Key={"pollId": poll_id, "connectionId": connection_id}
+    existing_votes = poll_table.query(
+        KeyConditionExpression="pollId = :pid AND begins_with(connectionId, :prefix)",
+        ExpressionAttributeValues={
+            ":pid": poll_id,
+            ":prefix": f"{connection_id}#",
+        },
     )
-    if existing.get("Item"):
-        return {"statusCode": 200, "body": "Already voted"}
+    if existing_votes["Count"] >= meta_max_choices:
+        return {"statusCode": 200, "body": "Max choices reached"}
 
-    # Write vote record
-    poll_table.put_item(
-        Item={
-            "pollId": poll_id,
-            "connectionId": connection_id,
-            "choices": choices,
-            "ttl": ttl_value,
-        }
-    )
+    # Check for duplicate vote on same choice (conditional put)
+    vote_key = {"pollId": poll_id, "connectionId": f"{connection_id}#{choice}"}
+    try:
+        poll_table.put_item(
+            Item={**vote_key, "ttl": ttl_value},
+            ConditionExpression="attribute_not_exists(pollId)",
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            return {"statusCode": 200, "body": "Already voted for this choice"}
+        raise
 
     # Atomic increment META votes
-    for choice in choices:
-        poll_table.update_item(
-            Key=meta_key,
-            UpdateExpression="ADD votes.#c :inc",
-            ExpressionAttributeNames={"#c": choice},
-            ExpressionAttributeValues={":inc": 1},
-        )
+    poll_table.update_item(
+        Key=meta_key,
+        UpdateExpression="ADD votes.#c :inc",
+        ExpressionAttributeNames={"#c": choice},
+        ExpressionAttributeValues={":inc": 1},
+    )
 
     # Fetch updated META and broadcast
-    updated_meta = poll_table.get_item(Key=meta_key).get("Item", {})
+    updated_meta = poll_table.get_item(Key=meta_key)["Item"]
     # Convert Decimal to int for JSON serialization
     votes = {k: int(v) for k, v in updated_meta.get("votes", {}).items()}
     state_msg = json.dumps({
         "type": "poll_state",
         "pollId": poll_id,
-        "options": updated_meta.get("options", []),
         "votes": votes,
     })
 

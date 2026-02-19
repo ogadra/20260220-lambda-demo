@@ -17,34 +17,29 @@ const props = withDefaults(
   { maxChoices: 1 },
 );
 
-const selected = ref<string[]>([]);
-const hasVoted = ref(false);
+const selected = ref<Set<string>>(new Set());
 const votes = ref<Record<string, number>>({});
+
+const remainingChoices = computed(
+  () => props.maxChoices - selected.value.size,
+);
 
 const totalVotes = computed(() =>
   Object.values(votes.value).reduce((sum, v) => sum + v, 0),
 );
 
-function toggleOption(id: string) {
-  if (hasVoted.value) return;
-  const idx = selected.value.indexOf(id);
-  if (idx >= 0) {
-    selected.value.splice(idx, 1);
-  } else if (selected.value.length < props.maxChoices) {
-    selected.value.push(id);
-  }
-}
+function selectOption(id: string) {
+  if (selected.value.has(id)) return;
+  if (remainingChoices.value <= 0) return;
 
-function submitVote() {
-  if (selected.value.length === 0 || hasVoted.value) return;
+  selected.value = new Set([...selected.value, id]);
   sendWsMessage({
     type: "poll_vote",
     pollId: props.pollId,
-    choices: selected.value,
+    choice: id,
     options: props.options.map((o) => o.id),
     maxChoices: props.maxChoices,
   });
-  hasVoted.value = true;
 }
 
 let unsubscribe: (() => void) | null = null;
@@ -66,7 +61,7 @@ onUnmounted(() => {
   <div class="poll-container">
     <h3 class="poll-question">{{ question }}</h3>
     <p v-if="maxChoices > 1" class="poll-hint">
-      最大{{ maxChoices }}つまで選択できます
+      最大{{ maxChoices }}つ選択できます（残り{{ remainingChoices }}）
     </p>
 
     <div class="poll-options">
@@ -75,42 +70,27 @@ onUnmounted(() => {
         :key="opt.id"
         class="poll-option"
         :class="{
-          selected: selected.includes(opt.id),
-          disabled: hasVoted,
+          selected: selected.has(opt.id),
+          disabled: selected.has(opt.id) || remainingChoices <= 0,
         }"
-        @click="toggleOption(opt.id)"
+        @click="selectOption(opt.id)"
       >
-        <span class="poll-check">{{
-          selected.includes(opt.id) ? "✓" : ""
-        }}</span>
+        <span class="poll-check">{{ selected.has(opt.id) ? "✓" : "" }}</span>
         <span class="poll-label">{{ opt.label }}</span>
-        <span v-if="hasVoted && votes[opt.id] != null" class="poll-count">
+        <span v-if="votes[opt.id] != null" class="poll-count">
           {{ votes[opt.id] }}票
         </span>
       </button>
     </div>
 
-    <button
-      v-if="!hasVoted"
-      class="poll-submit"
-      :disabled="selected.length === 0"
-      @click="submitVote"
-    >
-      投票する
-    </button>
-
-    <div v-if="hasVoted" class="poll-results">
-      <p class="poll-voted-msg">投票済み（計{{ totalVotes }}票）</p>
+    <div v-if="totalVotes > 0" class="poll-results">
       <div v-for="opt in options" :key="opt.id" class="poll-bar-row">
         <span class="poll-bar-label">{{ opt.label }}</span>
         <div class="poll-bar-track">
           <div
             class="poll-bar-fill"
             :style="{
-              width:
-                totalVotes > 0
-                  ? `${((votes[opt.id] || 0) / totalVotes) * 100}%`
-                  : '0%',
+              width: `${((votes[opt.id] || 0) / totalVotes) * 100}%`,
             }"
           />
         </div>
@@ -194,38 +174,9 @@ onUnmounted(() => {
   font-size: 0.9rem;
 }
 
-.poll-submit {
-  margin-top: 0.5rem;
-  padding: 0.6rem 2rem;
-  border: none;
-  border-radius: 8px;
-  background: #4ec9b0;
-  color: #1a1a2e;
-  font-size: 1.1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.poll-submit:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.poll-submit:hover:not(:disabled) {
-  opacity: 0.85;
-}
-
 .poll-results {
   width: 100%;
   max-width: 500px;
-}
-
-.poll-voted-msg {
-  text-align: center;
-  color: #4ec9b0;
-  font-size: 1rem;
-  margin: 0.5rem 0;
 }
 
 .poll-bar-row {
