@@ -55,19 +55,25 @@ function selectOption(id: string) {
     next.delete(id);
     selected.value = next;
     loading.value = new Set([...loading.value, id]);
-    sendWsMessage({
+    const sent = sendWsMessage({
       type: "poll_unvote",
       pollId: props.pollId,
       visitorId,
       choice: id,
     });
+    if (!sent) {
+      selected.value = new Set([...selected.value, id]);
+      const rollback = new Set(loading.value);
+      rollback.delete(id);
+      loading.value = rollback;
+    }
     return;
   }
 
   if (remainingChoices.value <= 0) return;
 
   loading.value = new Set([...loading.value, id]);
-  sendWsMessage({
+  const sent = sendWsMessage({
     type: "poll_vote",
     pollId: props.pollId,
     visitorId,
@@ -75,6 +81,11 @@ function selectOption(id: string) {
     options: props.options.map((o) => o.id),
     maxChoices: props.maxChoices,
   });
+  if (!sent) {
+    const rollback = new Set(loading.value);
+    rollback.delete(id);
+    loading.value = rollback;
+  }
 }
 
 function fetchPollState() {

@@ -24,11 +24,13 @@ export function onWsMessage(handler: MessageHandler) {
 	};
 }
 
-export function sendWsMessage(data: Record<string, unknown>) {
+export function sendWsMessage(data: Record<string, unknown>): boolean {
 	const ws = getWsInstance();
 	if (ws?.readyState === WebSocket.OPEN) {
 		ws.send(JSON.stringify(data));
+		return true;
 	}
+	return false;
 }
 
 let connected = false;
