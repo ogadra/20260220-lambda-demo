@@ -115,8 +115,8 @@ onUnmounted(() => {
             <template v-else>{{ selected.has(opt.id) ? "✓" : "" }}</template>
           </span>
           <span class="poll-label">{{ opt.label }}</span>
-          <span v-if="votes[opt.id]" class="poll-count">
-            {{ votes[opt.id] }}
+          <span v-if="totalVotes > 0" class="poll-count">
+            {{ votes[opt.id] || 0 }}
           </span>
         </span>
       </button>
