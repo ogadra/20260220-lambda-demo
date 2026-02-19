@@ -85,6 +85,22 @@ DNS プロバイダで CNAME レコードを追加する。
 
 Cloudflare の場合は Proxied モード（オレンジクラウド）で設定可能。
 
+## プレゼンター認証の設定
+
+初回デプロイ後、Secrets Manager にパスワードハッシュを設定する。
+
+```bash
+# bcrypt ハッシュを生成
+python3 -c "import bcrypt; print(bcrypt.hashpw(b'your-password', bcrypt.gensalt()).decode())"
+
+# Secrets Manager に設定
+aws secretsmanager put-secret-value \
+  --secret-id slidev-hosting-auth-password-hash \
+  --secret-string '$2b$12$...'
+```
+
+`https://<your-domain>/login` からログインすると、プレゼンターモードでスライド同期をブロードキャストできる。
+
 ## 構成
 
 - **S3**: 静的ファイルホスティング（パブリックアクセスブロック + OAC）

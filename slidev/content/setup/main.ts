@@ -8,10 +8,8 @@ import {
 	setWsInstance,
 } from "./connectionState";
 
-// パスから最初のセグメント（スライド名）を取得して /ws/[slide-name] 形式にする
-// 例: /what-is-this-add-to-calendar-button/1 -> /ws/what-is-this-add-to-calendar-button
-const slideName = window.location.pathname.split("/")[1] || "";
-const SYNC_SERVER = `${window.location.origin.replace(/^http/, "ws")}/ws/${slideName}`;
+// ロール判定はサーバー側でCookieベースで行う
+const SYNC_SERVER = `${window.location.origin.replace(/^http/, "ws")}/ws`;
 
 let reconnectTimer: number | null = null;
 
