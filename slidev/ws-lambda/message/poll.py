@@ -81,7 +81,6 @@ def handle_poll_vote(event, body):
                 "options": options,
                 "maxChoices": max_choices,
                 "votes": {},
-                "ttl": ttl_value,
             },
             ConditionExpression="attribute_not_exists(pollId)",
         )
