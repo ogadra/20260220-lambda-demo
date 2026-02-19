@@ -37,6 +37,10 @@ canvasWidth: 960
 
 ---
 
+<Poll pollId="theme" question="聞きたいテーマは？" :options='["aws-lambda-adapter", "terraform", "elastic ip"]' :maxChoices="2" />
+
+---
+
 ## ECS高い！Lambda使う！
 
 作成したアプリケーション
