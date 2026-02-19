@@ -5,7 +5,8 @@ Slidev プレゼンテーションを S3 + CloudFront でホスティングす�
 ## ディレクトリ構成
 
 - `content/` - Slidev ソース (slides.md, Vue コンポーネント, スタイル)
-- `terraform/` - ホスティング基盤 (S3, CloudFront, WAF, ACM, IVS)
+- `ws-lambda/` - WebSocket Lambda ハンドラ (Python 3.13)
+- `terraform/` - ホスティング基盤 (S3, CloudFront, WAF, ACM, IVS, API Gateway WebSocket, Lambda, DynamoDB)
 - `dist/` - ビルド出力 (生成物)
 
 ## プレゼンテーション開発
@@ -29,12 +30,15 @@ pnpm run build  # ビルド (出力先: ../dist)
 
 AWS リソース:
 - S3 バケット (OAC 経由のみアクセス)
-- CloudFront (デフォルト TTL: 60秒, SPA ルーティング対応)
+- CloudFront (デフォルト TTL: 60秒, SPA ルーティング対応, /ws を API Gateway にルーティング)
 - WAFv2 (レート制限: 10,000 req/5min/IP, 会場 IP 除外可能)
 - ACM 証明書 (us-east-1, カスタムドメイン用)
 - IVS Real-Time ステージ (配信用トークン自動生成)
+- API Gateway WebSocket (`wss://aws-slide.ogadra.com/ws`)
+- Lambda x3 (connect, disconnect, message) - スライド同期
+- DynamoDB (接続管理, PK=固定値 "default", SK=connectionId)
 
-プロバイダ: aws, awscc, external, local
+プロバイダ: aws, awscc, external, local, archive
 マルチリージョン: ap-northeast-1 (メイン) + us-east-1 (WAF/ACM)
 
 ### デプロイ
