@@ -84,8 +84,8 @@ resource "aws_lambda_function" "ws" {
 
   environment {
     variables = {
-      TABLE_NAME         = aws_dynamodb_table.ws_connections.name
-      SESSION_TABLE_NAME = aws_dynamodb_table.sessions.name
+      CONNECTIONS_TABLE_NAME = aws_dynamodb_table.ws_connections.name
+      SESSION_TABLE_NAME     = aws_dynamodb_table.sessions.name
     }
   }
 }

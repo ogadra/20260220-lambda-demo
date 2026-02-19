@@ -4,7 +4,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(os.environ["TABLE_NAME"])
+table = dynamodb.Table(os.environ["CONNECTIONS_TABLE_NAME"])
 
 ROOM = "default"
 

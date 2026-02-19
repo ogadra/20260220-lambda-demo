@@ -4,7 +4,7 @@ import time
 import boto3
 
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(os.environ["TABLE_NAME"])
+table = dynamodb.Table(os.environ["CONNECTIONS_TABLE_NAME"])
 session_table = dynamodb.Table(os.environ["SESSION_TABLE_NAME"])
 
 ROOM = "default"
