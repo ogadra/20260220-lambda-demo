@@ -47,8 +47,23 @@ function votePercent(id: string): number {
 }
 
 function selectOption(id: string) {
-  if (selected.value.has(id)) return;
   if (loading.value.has(id)) return;
+
+  if (selected.value.has(id)) {
+    // Unvote: remove from selected, add to loading
+    const next = new Set(selected.value);
+    next.delete(id);
+    selected.value = next;
+    loading.value = new Set([...loading.value, id]);
+    sendWsMessage({
+      type: "poll_unvote",
+      pollId: props.pollId,
+      visitorId,
+      choice: id,
+    });
+    return;
+  }
+
   if (remainingChoices.value <= 0) return;
 
   loading.value = new Set([...loading.value, id]);

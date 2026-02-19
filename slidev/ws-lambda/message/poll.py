@@ -1,46 +1,10 @@
 import json
-import os
 import time
 
 import boto3
 from botocore.exceptions import ClientError
 
-dynamodb = boto3.resource("dynamodb")
-connections_table = dynamodb.Table(os.environ["CONNECTIONS_TABLE_NAME"])
-poll_table = dynamodb.Table(os.environ["POLL_TABLE_NAME"])
-
-ROOM = "default"
-POLL_TTL_SECONDS = 86400  # 24 hours
-
-
-def handler(event, context):
-    body_str = event.get("body", "")
-    try:
-        body = json.loads(body_str)
-    except (json.JSONDecodeError, TypeError):
-        body = {}
-
-    msg_type = body.get("type")
-    if msg_type == "poll_vote":
-        return handle_poll_vote(event, body)
-    elif msg_type == "poll_get":
-        return handle_poll_get(event, body)
-    else:
-        return handle_slide_sync(event, body_str)
-
-
-def handle_slide_sync(event, body_str):
-    connection_id = event["requestContext"]["connectionId"]
-
-    response = connections_table.get_item(
-        Key={"room": ROOM, "connectionId": connection_id}
-    )
-    sender = response.get("Item")
-    if not sender or sender.get("role") != "presenter":
-        return {"statusCode": 200, "body": "Ignored"}
-
-    _broadcast(event, body_str, exclude_connection_id=connection_id)
-    return {"statusCode": 200, "body": "Sent"}
+from broadcast import POLL_TTL_SECONDS, broadcast, poll_table
 
 
 def handle_poll_get(event, body):
@@ -164,39 +128,48 @@ def handle_poll_vote(event, body):
         "votes": votes,
     })
 
-    _broadcast(event, state_msg, exclude_connection_id=None)
+    broadcast(event, state_msg, exclude_connection_id=None)
     return {"statusCode": 200, "body": "Voted"}
 
 
-def _broadcast(event, message, exclude_connection_id=None):
-    domain = event["requestContext"]["domainName"]
-    stage = event["requestContext"]["stage"]
-    endpoint = f"https://{domain}/{stage}"
-    apigw = boto3.client("apigatewaymanagementapi", endpoint_url=endpoint)
+def handle_poll_unvote(event, body):
+    poll_id = body.get("pollId")
+    visitor_id = body.get("visitorId")
+    choice = body.get("choice")
 
-    connections = connections_table.query(
-        KeyConditionExpression="room = :r",
-        ExpressionAttributeValues={":r": ROOM},
+    if not poll_id or not visitor_id or not choice:
+        return {"statusCode": 200, "body": "Invalid poll_unvote"}
+
+    vote_key = {"pollId": poll_id, "connectionId": f"{visitor_id}#{choice}"}
+    meta_key = {"pollId": poll_id, "connectionId": "META"}
+
+    # Delete the vote record (only if it exists)
+    try:
+        poll_table.delete_item(
+            Key=vote_key,
+            ConditionExpression="attribute_exists(pollId)",
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            return {"statusCode": 200, "body": "Vote not found"}
+        raise
+
+    # Atomic decrement META votes
+    poll_table.update_item(
+        Key=meta_key,
+        UpdateExpression="ADD votes.#c :dec",
+        ExpressionAttributeNames={"#c": choice},
+        ExpressionAttributeValues={":dec": -1},
     )
 
-    if isinstance(message, dict):
-        message = json.dumps(message)
+    # Fetch updated META and broadcast
+    updated_meta = poll_table.get_item(Key=meta_key)["Item"]
+    votes = {k: int(v) for k, v in updated_meta.get("votes", {}).items()}
+    state_msg = json.dumps({
+        "type": "poll_state",
+        "pollId": poll_id,
+        "votes": votes,
+    })
 
-    stale = []
-    for item in connections.get("Items", []):
-        connection_id = item["connectionId"]
-        if exclude_connection_id and connection_id == exclude_connection_id:
-            continue
-        try:
-            apigw.post_to_connection(
-                ConnectionId=connection_id,
-                Data=message.encode("utf-8"),
-            )
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "GoneException":
-                stale.append(connection_id)
-            else:
-                raise
-
-    for connection_id in stale:
-        connections_table.delete_item(Key={"room": ROOM, "connectionId": connection_id})
+    broadcast(event, state_msg, exclude_connection_id=None)
+    return {"statusCode": 200, "body": "Unvoted"}
