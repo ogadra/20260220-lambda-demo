@@ -6,6 +6,12 @@ from botocore.exceptions import ClientError
 
 from broadcast import POLL_TTL_SECONDS, broadcast, poll_table
 
+MAX_INPUT_LEN = 256
+
+
+def _validate_string(value, max_len=MAX_INPUT_LEN):
+    return isinstance(value, str) and 0 < len(value) <= max_len
+
 
 def _get_my_choices(poll_id, visitor_id):
     existing = poll_table.query(
@@ -47,7 +53,7 @@ def _send_to_caller(event, payload):
 def handle_poll_get(event, body):
     poll_id = body.get("pollId")
     visitor_id = body.get("visitorId")
-    if not poll_id or not visitor_id:
+    if not _validate_string(poll_id) or not _validate_string(visitor_id):
         return {"statusCode": 200, "body": "Invalid poll_get"}
 
     meta_key = {"pollId": poll_id, "connectionId": "META"}
@@ -77,7 +83,11 @@ def handle_poll_vote(event, body):
     options = body.get("options", [])
     max_choices = body.get("maxChoices", 1)
 
-    if not poll_id or not visitor_id or not choice:
+    if (
+        not _validate_string(poll_id)
+        or not _validate_string(visitor_id)
+        or not _validate_string(choice)
+    ):
         return {"statusCode": 200, "body": "Invalid poll_vote"}
 
     ttl_value = int(time.time()) + POLL_TTL_SECONDS
@@ -162,7 +172,11 @@ def handle_poll_unvote(event, body):
     visitor_id = body.get("visitorId")
     choice = body.get("choice")
 
-    if not poll_id or not visitor_id or not choice:
+    if (
+        not _validate_string(poll_id)
+        or not _validate_string(visitor_id)
+        or not _validate_string(choice)
+    ):
         return {"statusCode": 200, "body": "Invalid poll_unvote"}
 
     vote_key = {"pollId": poll_id, "connectionId": f"{visitor_id}#{choice}"}
