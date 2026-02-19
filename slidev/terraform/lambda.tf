@@ -30,7 +30,10 @@ resource "aws_iam_policy" "ws_lambda_dynamodb" {
           "dynamodb:DeleteItem",
           "dynamodb:Query",
         ]
-        Resource = aws_dynamodb_table.ws_connections.arn
+        Resource = [
+          aws_dynamodb_table.ws_connections.arn,
+          aws_dynamodb_table.sessions.arn,
+        ]
       }
     ]
   })
@@ -81,7 +84,8 @@ resource "aws_lambda_function" "ws" {
 
   environment {
     variables = {
-      TABLE_NAME = aws_dynamodb_table.ws_connections.name
+      TABLE_NAME         = aws_dynamodb_table.ws_connections.name
+      SESSION_TABLE_NAME = aws_dynamodb_table.sessions.name
     }
   }
 }

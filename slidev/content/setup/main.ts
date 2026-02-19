@@ -8,12 +8,8 @@ import {
 	setWsInstance,
 } from "./connectionState";
 
-// プレゼンターモード判定: /presenter パスまたは ?presenter クエリで判定
-const isPresenter =
-	window.location.pathname.includes("/presenter") ||
-	window.location.search.includes("presenter");
-const role = isPresenter ? "presenter" : "viewer";
-const SYNC_SERVER = `${window.location.origin.replace(/^http/, "ws")}/ws?role=${role}`;
+// ロール判定はサーバー側でCookieベースで行う
+const SYNC_SERVER = `${window.location.origin.replace(/^http/, "ws")}/ws`;
 
 let reconnectTimer: number | null = null;
 
