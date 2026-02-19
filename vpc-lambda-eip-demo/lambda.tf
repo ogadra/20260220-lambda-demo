@@ -27,13 +27,17 @@ data "archive_file" "lambda" {
 }
 
 resource "aws_lambda_function" "main" {
+  #checkov:skip=CKV_AWS_50:X-Ray tracing not needed for demo
+  #checkov:skip=CKV_AWS_272:Code signing not needed for demo
+  #checkov:skip=CKV_AWS_116:DLQ not needed for demo
   filename         = data.archive_file.lambda.output_path
   function_name    = "${var.project}-function"
   role             = aws_iam_role.lambda.arn
   handler          = "lambda_function.handler"
   source_code_hash = data.archive_file.lambda.output_base64sha256
-  runtime          = "python3.14"
-  timeout          = 30
+  runtime                        = "python3.14"
+  timeout                        = 30
+  reserved_concurrent_executions = 3
 
   vpc_config {
     subnet_ids         = [aws_subnet.public.id]

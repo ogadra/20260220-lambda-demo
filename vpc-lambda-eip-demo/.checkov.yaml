@@ -1,0 +1,7 @@
+framework:
+  - terraform
+compact: true
+quiet: true
+skip-check:
+  - CKV2_AWS_11  # VPC flow logs not needed for demo
+  - CKV2_AWS_19  # EIP is associated with Lambda ENI, not EC2
