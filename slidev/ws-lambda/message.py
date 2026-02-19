@@ -48,10 +48,11 @@ def handle_poll_vote(event, body):
     options = body.get("options", [])
     max_choices = body.get("maxChoices", 1)
 
-    if not poll_id or not choices or not options:
+    if not poll_id or not choices:
         return {"statusCode": 200, "body": "Invalid poll_vote"}
 
     ttl_value = int(time.time()) + POLL_TTL_SECONDS
+    meta_key = {"pollId": poll_id, "connectionId": "META"}
 
     # Ensure META exists (conditional put — only if not already present)
     try:
@@ -61,7 +62,7 @@ def handle_poll_vote(event, body):
                 "connectionId": "META",
                 "options": options,
                 "maxChoices": max_choices,
-                "votes": {opt: 0 for opt in options},
+                "votes": {},
                 "ttl": ttl_value,
             },
             ConditionExpression="attribute_not_exists(pollId)",
@@ -70,20 +71,13 @@ def handle_poll_vote(event, body):
         if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
             raise
 
-    # Get META to validate choices
-    meta_key = {"pollId": poll_id, "connectionId": "META"}
+    # Validate max_choices against META
     meta_resp = poll_table.get_item(Key=meta_key)
     meta = meta_resp.get("Item")
     if not meta:
         return {"statusCode": 200, "body": "Poll not found"}
 
-    valid_options = meta.get("options", [])
     meta_max_choices = meta.get("maxChoices", 1)
-
-    # Validate choices
-    for c in choices:
-        if c not in valid_options:
-            return {"statusCode": 200, "body": "Invalid choice"}
     if len(choices) > meta_max_choices:
         return {"statusCode": 200, "body": "Too many choices"}
 
