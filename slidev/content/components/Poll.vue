@@ -88,14 +88,12 @@ onMounted(() => {
   unsubscribe = onWsMessage((data) => {
     if (data.type === "poll_state" && data.pollId === props.pollId) {
       votes.value = (data.votes as Record<string, number>) || {};
-      // Restore selections from server (e.g. after reload)
       if (Array.isArray(data.myChoices)) {
         selected.value = new Set(data.myChoices as string[]);
         loading.value = new Set();
       } else if (loading.value.size > 0) {
-        // Move loading items to selected on vote response
-        selected.value = new Set([...selected.value, ...loading.value]);
-        loading.value = new Set();
+        // Broadcast doesn't include myChoices — fetch authoritative state
+        fetchPollState();
       }
     }
   });

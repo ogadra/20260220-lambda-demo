@@ -7,8 +7,33 @@ from botocore.exceptions import ClientError
 from broadcast import POLL_TTL_SECONDS, broadcast, poll_table
 
 
-def handle_poll_get(event, body):
+def _get_my_choices(poll_id, visitor_id):
+    existing = poll_table.query(
+        KeyConditionExpression="pollId = :pid AND begins_with(connectionId, :prefix)",
+        ExpressionAttributeValues={
+            ":pid": poll_id,
+            ":prefix": f"{visitor_id}#",
+        },
+    )
+    return [
+        item["connectionId"].split("#", 1)[1]
+        for item in existing.get("Items", [])
+    ]
+
+
+def _send_to_caller(event, payload):
     connection_id = event["requestContext"]["connectionId"]
+    domain = event["requestContext"]["domainName"]
+    stage = event["requestContext"]["stage"]
+    endpoint = f"https://{domain}/{stage}"
+    apigw = boto3.client("apigatewaymanagementapi", endpoint_url=endpoint)
+    apigw.post_to_connection(
+        ConnectionId=connection_id,
+        Data=json.dumps(payload).encode("utf-8"),
+    )
+
+
+def handle_poll_get(event, body):
     poll_id = body.get("pollId")
     visitor_id = body.get("visitorId")
     if not poll_id or not visitor_id:
@@ -21,34 +46,14 @@ def handle_poll_get(event, body):
         return {"statusCode": 200, "body": "Poll not found"}
 
     votes = {k: int(v) for k, v in meta.get("votes", {}).items()}
+    my_choices = _get_my_choices(poll_id, visitor_id)
 
-    # Look up this visitor's existing votes
-    existing = poll_table.query(
-        KeyConditionExpression="pollId = :pid AND begins_with(connectionId, :prefix)",
-        ExpressionAttributeValues={
-            ":pid": poll_id,
-            ":prefix": f"{visitor_id}#",
-        },
-    )
-    my_choices = [
-        item["connectionId"].split("#", 1)[1]
-        for item in existing.get("Items", [])
-    ]
-
-    domain = event["requestContext"]["domainName"]
-    stage = event["requestContext"]["stage"]
-    endpoint = f"https://{domain}/{stage}"
-    apigw = boto3.client("apigatewaymanagementapi", endpoint_url=endpoint)
-
-    apigw.post_to_connection(
-        ConnectionId=connection_id,
-        Data=json.dumps({
-            "type": "poll_state",
-            "pollId": poll_id,
-            "votes": votes,
-            "myChoices": my_choices,
-        }).encode("utf-8"),
-    )
+    _send_to_caller(event, {
+        "type": "poll_state",
+        "pollId": poll_id,
+        "votes": votes,
+        "myChoices": my_choices,
+    })
 
     return {"statusCode": 200, "body": "OK"}
 
@@ -128,7 +133,17 @@ def handle_poll_vote(event, body):
         "votes": votes,
     })
 
-    broadcast(event, state_msg, exclude_connection_id=None)
+    broadcast(event, state_msg, exclude_connection_id=connection_id)
+
+    # Send caller their updated myChoices
+    my_choices = _get_my_choices(poll_id, visitor_id)
+    _send_to_caller(event, {
+        "type": "poll_state",
+        "pollId": poll_id,
+        "votes": votes,
+        "myChoices": my_choices,
+    })
+
     return {"statusCode": 200, "body": "Voted"}
 
 
@@ -171,5 +186,16 @@ def handle_poll_unvote(event, body):
         "votes": votes,
     })
 
-    broadcast(event, state_msg, exclude_connection_id=None)
+    connection_id = event["requestContext"]["connectionId"]
+    broadcast(event, state_msg, exclude_connection_id=connection_id)
+
+    # Send caller their updated myChoices
+    my_choices = _get_my_choices(poll_id, visitor_id)
+    _send_to_caller(event, {
+        "type": "poll_state",
+        "pollId": poll_id,
+        "votes": votes,
+        "myChoices": my_choices,
+    })
+
     return {"statusCode": 200, "body": "Unvoted"}
