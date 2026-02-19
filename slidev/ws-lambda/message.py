@@ -72,13 +72,8 @@ def handle_poll_vote(event, body):
             raise
 
     # Validate max_choices against META
-    meta_resp = poll_table.get_item(Key=meta_key)
-    meta = meta_resp.get("Item")
-    if not meta:
-        return {"statusCode": 200, "body": "Poll not found"}
-
-    meta_max_choices = meta.get("maxChoices", 1)
-    if len(choices) > meta_max_choices:
+    meta = poll_table.get_item(Key=meta_key)["Item"]
+    if len(choices) > meta.get("maxChoices", 1):
         return {"statusCode": 200, "body": "Too many choices"}
 
     # Check for duplicate vote
