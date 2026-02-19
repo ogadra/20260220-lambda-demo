@@ -8,7 +8,7 @@ resource "aws_apigatewayv2_stage" "websocket" {
   #checkov:skip=CKV2_AWS_51:Access logging not needed for demo
   #checkov:skip=CKV_AWS_76:Access logging not needed for demo
   api_id      = aws_apigatewayv2_api.websocket.id
-  name        = "production"
+  name        = "ws"
   auto_deploy = true
 
   default_route_settings {

@@ -34,8 +34,6 @@ resource "aws_cloudfront_distribution" "slidev" {
   origin {
     domain_name = "${aws_apigatewayv2_api.websocket.id}.execute-api.ap-northeast-1.amazonaws.com"
     origin_id   = "websocket-api"
-    origin_path = "/production"
-
     custom_origin_config {
       http_port              = 80
       https_port             = 443
