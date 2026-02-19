@@ -8,10 +8,12 @@ import {
 	setWsInstance,
 } from "./connectionState";
 
-// パスから最初のセグメント（スライド名）を取得して /ws/[slide-name] 形式にする
-// 例: /what-is-this-add-to-calendar-button/1 -> /ws/what-is-this-add-to-calendar-button
-const slideName = window.location.pathname.split("/")[1] || "";
-const SYNC_SERVER = `${window.location.origin.replace(/^http/, "ws")}/ws/${slideName}`;
+// プレゼンターモード判定: /presenter パスまたは ?presenter クエリで判定
+const isPresenter =
+	window.location.pathname.includes("/presenter") ||
+	window.location.search.includes("presenter");
+const role = isPresenter ? "presenter" : "viewer";
+const SYNC_SERVER = `${window.location.origin.replace(/^http/, "ws")}/ws?role=${role}`;
 
 let reconnectTimer: number | null = null;
 
