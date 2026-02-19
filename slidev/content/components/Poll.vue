@@ -19,10 +19,11 @@ const props = withDefaults(
 );
 
 const selected = ref<Set<string>>(new Set());
+const loading = ref<Set<string>>(new Set());
 const votes = ref<Record<string, number>>({});
 
 const remainingChoices = computed(
-  () => props.maxChoices - selected.value.size,
+  () => props.maxChoices - selected.value.size - loading.value.size,
 );
 
 const totalVotes = computed(() =>
@@ -36,9 +37,10 @@ function votePercent(id: string): number {
 
 function selectOption(id: string) {
   if (selected.value.has(id)) return;
+  if (loading.value.has(id)) return;
   if (remainingChoices.value <= 0) return;
 
-  selected.value = new Set([...selected.value, id]);
+  loading.value = new Set([...loading.value, id]);
   sendWsMessage({
     type: "poll_vote",
     pollId: props.pollId,
@@ -59,6 +61,11 @@ onMounted(() => {
   unsubscribe = onWsMessage((data) => {
     if (data.type === "poll_state" && data.pollId === props.pollId) {
       votes.value = (data.votes as Record<string, number>) || {};
+      // Move loading items to selected on response
+      if (loading.value.size > 0) {
+        selected.value = new Set([...selected.value, ...loading.value]);
+        loading.value = new Set();
+      }
     }
   });
 
@@ -93,7 +100,8 @@ onUnmounted(() => {
         class="poll-option"
         :class="{
           selected: selected.has(opt.id),
-          disabled: selected.has(opt.id) || remainingChoices <= 0,
+          loading: loading.has(opt.id),
+          disabled: selected.has(opt.id) || loading.has(opt.id) || remainingChoices <= 0,
         }"
         @click="selectOption(opt.id)"
       >
@@ -102,7 +110,10 @@ onUnmounted(() => {
           :style="{ width: `${votePercent(opt.id)}%` }"
         />
         <span class="poll-option-content">
-          <span class="poll-check">{{ selected.has(opt.id) ? "✓" : "" }}</span>
+          <span class="poll-check">
+            <span v-if="loading.has(opt.id)" class="poll-spinner" />
+            <template v-else>{{ selected.has(opt.id) ? "✓" : "" }}</template>
+          </span>
           <span class="poll-label">{{ opt.label }}</span>
           <span v-if="votes[opt.id]" class="poll-count">
             {{ votes[opt.id] }}
@@ -194,6 +205,22 @@ onUnmounted(() => {
   text-align: center;
   color: #4ec9b0;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poll-spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid rgba(78, 201, 176, 0.3);
+  border-top-color: #4ec9b0;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .poll-label {
