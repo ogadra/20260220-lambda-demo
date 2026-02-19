@@ -22,6 +22,7 @@
             terraform
             zip
             gitleaks
+            nodejs
             pnpm
             lefthook
             checkov
