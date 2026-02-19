@@ -42,6 +42,30 @@ resource "aws_cloudfront_distribution" "slidev" {
     }
   }
 
+  origin {
+    domain_name = "${aws_apigatewayv2_api.http.id}.execute-api.ap-northeast-1.amazonaws.com"
+    origin_id   = "http-api"
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  # Login API Gateway behavior
+  ordered_cache_behavior {
+    path_pattern           = "/login"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "http-api"
+    viewer_protocol_policy = "https-only"
+    compress               = false
+
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+  }
+
   # WebSocket API Gateway behavior
   ordered_cache_behavior {
     path_pattern           = "/ws"
