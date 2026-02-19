@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { onWsMessage, sendWsMessage } from "../setup/main";
+import { connectionStatus, ConnectionStatusEnum } from "../setup/connectionState";
 
 interface PollOption {
   id: string;
@@ -47,7 +48,12 @@ function selectOption(id: string) {
   });
 }
 
+function fetchPollState() {
+  sendWsMessage({ type: "poll_get", pollId: props.pollId });
+}
+
 let unsubscribe: (() => void) | null = null;
+let stopWatch: (() => void) | null = null;
 
 onMounted(() => {
   unsubscribe = onWsMessage((data) => {
@@ -55,10 +61,21 @@ onMounted(() => {
       votes.value = (data.votes as Record<string, number>) || {};
     }
   });
+
+  // Fetch initial state when connected (or immediately if already connected)
+  if (connectionStatus.value === ConnectionStatusEnum.Connected) {
+    fetchPollState();
+  }
+  stopWatch = watch(connectionStatus, (status) => {
+    if (status === ConnectionStatusEnum.Connected) {
+      fetchPollState();
+    }
+  });
 });
 
 onUnmounted(() => {
   unsubscribe?.();
+  stopWatch?.();
 });
 </script>
 

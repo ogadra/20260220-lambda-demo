@@ -23,6 +23,8 @@ def handler(event, context):
     msg_type = body.get("type")
     if msg_type == "poll_vote":
         return handle_poll_vote(event, body)
+    elif msg_type == "poll_get":
+        return handle_poll_get(event, body)
     else:
         return handle_slide_sync(event, body_str)
 
@@ -39,6 +41,37 @@ def handle_slide_sync(event, body_str):
 
     _broadcast(event, body_str, exclude_connection_id=connection_id)
     return {"statusCode": 200, "body": "Sent"}
+
+
+def handle_poll_get(event, body):
+    connection_id = event["requestContext"]["connectionId"]
+    poll_id = body.get("pollId")
+    if not poll_id:
+        return {"statusCode": 200, "body": "Invalid poll_get"}
+
+    meta_key = {"pollId": poll_id, "connectionId": "META"}
+    meta_resp = poll_table.get_item(Key=meta_key)
+    meta = meta_resp.get("Item")
+    if not meta:
+        return {"statusCode": 200, "body": "Poll not found"}
+
+    votes = {k: int(v) for k, v in meta.get("votes", {}).items()}
+
+    domain = event["requestContext"]["domainName"]
+    stage = event["requestContext"]["stage"]
+    endpoint = f"https://{domain}/{stage}"
+    apigw = boto3.client("apigatewaymanagementapi", endpoint_url=endpoint)
+
+    apigw.post_to_connection(
+        ConnectionId=connection_id,
+        Data=json.dumps({
+            "type": "poll_state",
+            "pollId": poll_id,
+            "votes": votes,
+        }).encode("utf-8"),
+    )
+
+    return {"statusCode": 200, "body": "OK"}
 
 
 def handle_poll_vote(event, body):
