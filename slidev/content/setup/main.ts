@@ -31,7 +31,11 @@ export function sendWsMessage(data: Record<string, unknown>) {
 	}
 }
 
+let connected = false;
+
 export function connectWebSocket(onUpdate: (data: Partial<object>) => void): void {
+	if (connected) return;
+	connected = true;
 
 	// 既存のタイマーをクリア
 	if (reconnectTimer) {
