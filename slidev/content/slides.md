@@ -37,10 +37,6 @@ canvasWidth: 960
 
 ---
 
-<Poll pollId="theme" question="聞きたいテーマは？" :options='[{"id":"adapter","label":"aws-lambda-adapter"},{"id":"terraform","label":"terraform"},{"id":"eip","label":"elastic ip"}]' :maxChoices="2" />
-
----
-
 ## ECS高い！Lambda使う！
 
 作成したアプリケーション
@@ -74,6 +70,24 @@ li {
   font-size: 2.5rem !important;
 }
 </style>
+---
+
+<Poll
+  pollId="theme"
+  question="時間がないのでアンケートします！聞きたいテーマは？"
+  :options='[{
+    "id":"adapter",
+    "label":"aws-lambda-adapter",
+  }, {
+    "id":"terraform",
+    "label":"TerraformでLambdaを管理する",
+  }, {
+    "id":"eip",
+    "label":"Elastic IPをLambdaにアタッチする",
+  }]'
+  :maxChoices="2"
+/>
+
 ---
 
 ## 1. aws-lambda-adapterを使う
@@ -140,15 +154,28 @@ p {
 
 ---
 
-## IaCツール、何使う？
+<Poll
+  pollId="iac"
+  question="IaCツール、何使ってる？"
+  :options='[{
+    "id":"sam",
+    "label":"AWS SAM",
+  }, {
+    "id":"terraform",
+    "label":"Terraform (+ Lambroll)",
+  }, {
+    "id":"cdk",
+    "label":"AWS CDK",
+  }, {
+    "id":"other",
+    "label":"その他",
+  }, {
+    "id":"none",
+    "label":"IaC化？なにそれ？美味しいの？",
+  }]'
+  :maxChoices="1"
+/>
 
-<div class="center-content">
-
-1. AWS SAM
-2. Terraform ( + Lambroll)
-3. CDK
-4. その他
-5. IaC化？なにそれ？美味しいの？
 
 </div>
 
