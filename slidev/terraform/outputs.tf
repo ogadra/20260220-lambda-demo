@@ -17,3 +17,24 @@ output "slidev_url" {
   description = "Slidev presentation URL"
   value       = "https://${aws_cloudfront_distribution.slidev.domain_name}/"
 }
+
+output "acm_dns_validation_records" {
+  description = "DNS records to add in Cloudflare for ACM certificate validation"
+  value = {
+    for dvo in aws_acm_certificate.slidev.domain_validation_options : dvo.domain_name => {
+      type  = dvo.resource_record_type
+      name  = dvo.resource_record_name
+      value = dvo.resource_record_value
+    }
+  }
+}
+
+output "custom_domain" {
+  description = "Custom domain name for the CloudFront distribution"
+  value       = var.custom_domain
+}
+
+output "custom_domain_cname_target" {
+  description = "CNAME target for the custom domain (point your DNS to this value)"
+  value       = aws_cloudfront_distribution.slidev.domain_name
+}

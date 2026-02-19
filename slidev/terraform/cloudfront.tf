@@ -9,11 +9,11 @@ resource "aws_cloudfront_distribution" "slidev" {
   #checkov:skip=CKV_AWS_86:Access logging not needed for demo
   #checkov:skip=CKV_AWS_310:Origin failover not needed for single-origin static site
   #checkov:skip=CKV_AWS_374:Geo restriction not needed for public slides
-  #checkov:skip=CKV_AWS_174:Default CloudFront certificate does not support custom TLS config
-  #checkov:skip=CKV2_AWS_42:Using default CloudFront certificate for demo
+  #checkov:skip=CKV_AWS_174:Using TLSv1.2_2021 with ACM certificate
   #checkov:skip=CKV2_AWS_32:Response headers policy not needed for demo
   #checkov:skip=CKV2_AWS_47:Log4j not relevant for static site
   enabled             = true
+  aliases             = [var.custom_domain]
   default_root_object = "index.html"
   web_acl_id          = aws_wafv2_web_acl.slidev.arn
 
@@ -64,6 +64,8 @@ resource "aws_cloudfront_distribution" "slidev" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate.slidev.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 }
