@@ -102,9 +102,6 @@ onMounted(() => {
       if (Array.isArray(data.myChoices)) {
         selected.value = new Set(data.myChoices as string[]);
         loading.value = new Set();
-      } else if (loading.value.size > 0) {
-        // Broadcast doesn't include myChoices — fetch authoritative state
-        fetchPollState();
       }
     }
   });
