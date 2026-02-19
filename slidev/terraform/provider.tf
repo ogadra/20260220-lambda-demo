@@ -6,10 +6,26 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    awscc = {
+      source  = "hashicorp/awscc"
+      version = "~> 1.0"
+    }
+    external = {
+      source  = "hashicorp/external"
+      version = "~> 2.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
   }
 }
 
 provider "aws" {
+  region = "ap-northeast-1"
+}
+
+provider "awscc" {
   region = "ap-northeast-1"
 }
 

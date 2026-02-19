@@ -38,3 +38,19 @@ output "custom_domain_cname_target" {
   description = "CNAME target for the custom domain (point your DNS to this value)"
   value       = aws_cloudfront_distribution.slidev.domain_name
 }
+
+output "ivs_stage_arn" {
+  description = "IVS Real-Time stage ARN"
+  value       = awscc_ivs_stage.livestream.arn
+}
+
+output "ivs_whip_server" {
+  description = "WHIP server URL for OBS"
+  value       = "https://global.whip.live-video.net"
+}
+
+output "ivs_publisher_token" {
+  description = "OBS の Bearer Token に設定する"
+  value       = trimspace(data.local_file.publisher_token.content)
+  sensitive   = true
+}
