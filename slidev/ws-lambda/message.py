@@ -51,28 +51,28 @@ def handle_poll_vote(event, body):
     if not poll_id or not choices or not options:
         return {"statusCode": 200, "body": "Invalid poll_vote"}
 
-    pk = f"POLL#{poll_id}"
     ttl_value = int(time.time()) + POLL_TTL_SECONDS
 
     # Ensure META exists (conditional put — only if not already present)
     try:
         poll_table.put_item(
             Item={
-                "pk": pk,
-                "sk": "META",
+                "pollId": poll_id,
+                "connectionId": "META",
                 "options": options,
                 "maxChoices": max_choices,
                 "votes": {opt: 0 for opt in options},
                 "ttl": ttl_value,
             },
-            ConditionExpression="attribute_not_exists(pk)",
+            ConditionExpression="attribute_not_exists(pollId)",
         )
     except ClientError as e:
         if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
             raise
 
     # Get META to validate choices
-    meta_resp = poll_table.get_item(Key={"pk": pk, "sk": "META"})
+    meta_key = {"pollId": poll_id, "connectionId": "META"}
+    meta_resp = poll_table.get_item(Key=meta_key)
     meta = meta_resp.get("Item")
     if not meta:
         return {"statusCode": 200, "body": "Poll not found"}
@@ -88,16 +88,17 @@ def handle_poll_vote(event, body):
         return {"statusCode": 200, "body": "Too many choices"}
 
     # Check for duplicate vote
-    vote_sk = f"VOTE#{connection_id}"
-    existing = poll_table.get_item(Key={"pk": pk, "sk": vote_sk})
+    existing = poll_table.get_item(
+        Key={"pollId": poll_id, "connectionId": connection_id}
+    )
     if existing.get("Item"):
         return {"statusCode": 200, "body": "Already voted"}
 
     # Write vote record
     poll_table.put_item(
         Item={
-            "pk": pk,
-            "sk": vote_sk,
+            "pollId": poll_id,
+            "connectionId": connection_id,
             "choices": choices,
             "ttl": ttl_value,
         }
@@ -106,14 +107,14 @@ def handle_poll_vote(event, body):
     # Atomic increment META votes
     for choice in choices:
         poll_table.update_item(
-            Key={"pk": pk, "sk": "META"},
+            Key=meta_key,
             UpdateExpression="ADD votes.#c :inc",
             ExpressionAttributeNames={"#c": choice},
             ExpressionAttributeValues={":inc": 1},
         )
 
     # Fetch updated META and broadcast
-    updated_meta = poll_table.get_item(Key={"pk": pk, "sk": "META"}).get("Item", {})
+    updated_meta = poll_table.get_item(Key=meta_key).get("Item", {})
     # Convert Decimal to int for JSON serialization
     votes = {k: int(v) for k, v in updated_meta.get("votes", {}).items()}
     state_msg = json.dumps({

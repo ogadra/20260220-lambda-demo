@@ -23,16 +23,16 @@ resource "aws_dynamodb_table" "ws_connections" {
 resource "aws_dynamodb_table" "poll_votes" {
   name         = "${var.project}-poll-votes"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "pk"
-  range_key    = "sk"
+  hash_key     = "pollId"
+  range_key    = "connectionId"
 
   attribute {
-    name = "pk"
+    name = "pollId"
     type = "S"
   }
 
   attribute {
-    name = "sk"
+    name = "connectionId"
     type = "S"
   }
 
