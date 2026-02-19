@@ -37,7 +37,7 @@ canvasWidth: 960
 
 ---
 
-<Poll pollId="theme" question="聞きたいテーマは？" :options='["aws-lambda-adapter", "terraform", "elastic ip"]' :maxChoices="2" />
+<Poll pollId="theme" question="聞きたいテーマは？" :options='[{"id":"adapter","label":"aws-lambda-adapter"},{"id":"terraform","label":"terraform"},{"id":"eip","label":"elastic ip"}]' :maxChoices="2" />
 
 ---
 

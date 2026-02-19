@@ -2,11 +2,16 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { onWsMessage, sendWsMessage } from "../setup/main";
 
+interface PollOption {
+  id: string;
+  label: string;
+}
+
 const props = withDefaults(
   defineProps<{
     pollId: string;
     question: string;
-    options: string[];
+    options: PollOption[];
     maxChoices?: number;
   }>(),
   { maxChoices: 1 },
@@ -20,13 +25,13 @@ const totalVotes = computed(() =>
   Object.values(votes.value).reduce((sum, v) => sum + v, 0),
 );
 
-function toggleOption(opt: string) {
+function toggleOption(id: string) {
   if (hasVoted.value) return;
-  const idx = selected.value.indexOf(opt);
+  const idx = selected.value.indexOf(id);
   if (idx >= 0) {
     selected.value.splice(idx, 1);
   } else if (selected.value.length < props.maxChoices) {
-    selected.value.push(opt);
+    selected.value.push(id);
   }
 }
 
@@ -36,7 +41,7 @@ function submitVote() {
     type: "poll_vote",
     pollId: props.pollId,
     choices: selected.value,
-    options: props.options,
+    options: props.options.map((o) => o.id),
     maxChoices: props.maxChoices,
   });
   hasVoted.value = true;
@@ -67,20 +72,20 @@ onUnmounted(() => {
     <div class="poll-options">
       <button
         v-for="opt in options"
-        :key="opt"
+        :key="opt.id"
         class="poll-option"
         :class="{
-          selected: selected.includes(opt),
+          selected: selected.includes(opt.id),
           disabled: hasVoted,
         }"
-        @click="toggleOption(opt)"
+        @click="toggleOption(opt.id)"
       >
         <span class="poll-check">{{
-          selected.includes(opt) ? "✓" : ""
+          selected.includes(opt.id) ? "✓" : ""
         }}</span>
-        <span class="poll-label">{{ opt }}</span>
-        <span v-if="hasVoted && votes[opt] != null" class="poll-count">
-          {{ votes[opt] }}票
+        <span class="poll-label">{{ opt.label }}</span>
+        <span v-if="hasVoted && votes[opt.id] != null" class="poll-count">
+          {{ votes[opt.id] }}票
         </span>
       </button>
     </div>
@@ -96,20 +101,20 @@ onUnmounted(() => {
 
     <div v-if="hasVoted" class="poll-results">
       <p class="poll-voted-msg">投票済み（計{{ totalVotes }}票）</p>
-      <div v-for="opt in options" :key="opt" class="poll-bar-row">
-        <span class="poll-bar-label">{{ opt }}</span>
+      <div v-for="opt in options" :key="opt.id" class="poll-bar-row">
+        <span class="poll-bar-label">{{ opt.label }}</span>
         <div class="poll-bar-track">
           <div
             class="poll-bar-fill"
             :style="{
               width:
                 totalVotes > 0
-                  ? `${((votes[opt] || 0) / totalVotes) * 100}%`
+                  ? `${((votes[opt.id] || 0) / totalVotes) * 100}%`
                   : '0%',
             }"
           />
         </div>
-        <span class="poll-bar-value">{{ votes[opt] || 0 }}</span>
+        <span class="poll-bar-value">{{ votes[opt.id] || 0 }}</span>
       </div>
     </div>
   </div>
