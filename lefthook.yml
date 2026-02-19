@@ -1,5 +1,9 @@
 pre-commit:
   commands:
+    terraform-fmt:
+      glob: "*.tf"
+      run: terraform fmt {staged_files}
+      stage_fixed: true
     gitleaks:
       run: gitleaks protect --staged
     checkov-vpc-lambda:
