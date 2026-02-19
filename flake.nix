@@ -23,6 +23,7 @@
             zip
             gitleaks
             lefthook
+            checkov
           ];
 
           shellHook = ''
