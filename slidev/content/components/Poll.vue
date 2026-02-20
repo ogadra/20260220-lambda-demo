@@ -31,6 +31,7 @@ const props = withDefaults(
 const selected = ref<Set<string>>(new Set());
 const loading = ref<Set<string>>(new Set());
 const votes = ref<Record<string, number>>({});
+const initialized = ref(false);
 
 const remainingChoices = computed(
   () => props.maxChoices - selected.value.size - loading.value.size,
@@ -46,6 +47,7 @@ function votePercent(id: string): number {
 }
 
 function selectOption(id: string) {
+  if (!initialized.value) return;
   if (loading.value.has(id)) return;
 
   if (selected.value.has(id)) {
@@ -83,8 +85,6 @@ function selectOption(id: string) {
       visitorId,
       fromChoice: current,
       toChoice: id,
-      options: props.options.map((o) => o.id),
-      maxChoices: props.maxChoices,
     });
     if (!sent) {
       selected.value = new Set([...selected.value, current]);
@@ -104,8 +104,6 @@ function selectOption(id: string) {
     pollId: props.pollId,
     visitorId,
     choice: id,
-    options: props.options.map((o) => o.id),
-    maxChoices: props.maxChoices,
   });
   if (!sent) {
     const rollback = new Set(loading.value);
@@ -115,7 +113,13 @@ function selectOption(id: string) {
 }
 
 function fetchPollState() {
-  sendWsMessage({ type: "poll_get", pollId: props.pollId, visitorId });
+  sendWsMessage({
+    type: "poll_get",
+    pollId: props.pollId,
+    visitorId,
+    options: props.options.map((o) => o.id),
+    maxChoices: props.maxChoices,
+  });
 }
 
 let unsubscribe: (() => void) | null = null;
@@ -125,10 +129,14 @@ onMounted(() => {
   unsubscribe = onWsMessage((data) => {
     if (data.type === "poll_state" && data.pollId === props.pollId) {
       votes.value = (data.votes as Record<string, number>) || {};
+      initialized.value = true;
       if (Array.isArray(data.myChoices)) {
         selected.value = new Set(data.myChoices as string[]);
         loading.value = new Set();
       }
+    }
+    if (data.type === "poll_not_initialized" && data.pollId === props.pollId) {
+      initialized.value = false;
     }
   });
 
@@ -163,7 +171,7 @@ onUnmounted(() => {
         :class="{
           selected: selected.has(opt.id),
           loading: loading.has(opt.id),
-          disabled: loading.has(opt.id) || (remainingChoices <= 0 && !selected.has(opt.id) && maxChoices !== 1),
+          disabled: !initialized || loading.has(opt.id) || (remainingChoices <= 0 && !selected.has(opt.id) && maxChoices !== 1),
         }"
         @click="selectOption(opt.id)"
       >
@@ -177,7 +185,7 @@ onUnmounted(() => {
             <template v-else>{{ selected.has(opt.id) ? "✓" : "" }}</template>
           </span>
           <span class="poll-label">{{ opt.label }}</span>
-          <span class="poll-count">
+          <span v-if="initialized" class="poll-count">
             {{ votes[opt.id] || 0 }}
           </span>
         </span>
