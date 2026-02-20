@@ -24,50 +24,50 @@ def handle_poll_get(event, body):
     meta = get_meta(poll_id)
 
     if not meta:
-        # Check if the caller is a presenter
+        # Only presenters can initialize a poll
         conn_resp = connections_table.get_item(
             Key={"room": ROOM, "connectionId": connection_id}
         )
         caller = conn_resp.get("Item")
 
-        if caller and caller.get("role") == "presenter":
-            # Auto-create META for presenter
-            try:
-                poll_table.put_item(
-                    Item={
-                        "pollId": poll_id,
-                        "connectionId": "META",
-                        "options": options,
-                        "maxChoices": max_choices,
-                        "votes": {},
-                    },
-                    ConditionExpression="attribute_not_exists(pollId)",
-                )
-            except ClientError as e:
-                if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
-                    raise
-
+        if not caller or caller.get("role") != "presenter":
             send_to_caller(event, {
-                "type": "poll_state",
+                "type": "poll_not_initialized",
                 "pollId": poll_id,
-                "votes": {},
-                "myChoices": [],
             })
+            return {"statusCode": 200, "body": "Poll not initialized"}
 
-            # Broadcast to all viewers so they know the poll is now initialized
-            broadcast(event, json.dumps({
-                "type": "poll_state",
-                "pollId": poll_id,
-                "votes": {},
-            }), exclude_connection_id=connection_id)
-
-            return {"statusCode": 200, "body": "Poll initialized"}
+        # Auto-create META for presenter
+        try:
+            poll_table.put_item(
+                Item={
+                    "pollId": poll_id,
+                    "connectionId": "META",
+                    "options": options,
+                    "maxChoices": max_choices,
+                    "votes": {},
+                },
+                ConditionExpression="attribute_not_exists(pollId)",
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+                raise
 
         send_to_caller(event, {
-            "type": "poll_not_initialized",
+            "type": "poll_state",
             "pollId": poll_id,
+            "votes": {},
+            "myChoices": [],
         })
-        return {"statusCode": 200, "body": "Poll not initialized"}
+
+        # Broadcast to all viewers so they know the poll is now initialized
+        broadcast(event, json.dumps({
+            "type": "poll_state",
+            "pollId": poll_id,
+            "votes": {},
+        }), exclude_connection_id=connection_id)
+
+        return {"statusCode": 200, "body": "Poll initialized"}
 
     votes = get_votes_from_meta(meta)
     my_choices = get_my_choices(poll_id, visitor_id)
