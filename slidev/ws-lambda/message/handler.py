@@ -1,6 +1,9 @@
 import json
 
-from poll import handle_poll_get, handle_poll_switch, handle_poll_unvote, handle_poll_vote
+from poll.get import handle_poll_get
+from poll.vote import handle_poll_vote
+from poll.unvote import handle_poll_unvote
+from poll.switch import handle_poll_switch
 from slide_sync import handle_slide_sync
 from viewer_count import handle_viewer_count
 
