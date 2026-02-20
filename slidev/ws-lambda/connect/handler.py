@@ -3,6 +3,8 @@ import time
 
 import boto3
 
+from broadcast import broadcast
+
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(os.environ["CONNECTIONS_TABLE_NAME"])
 session_table = dynamodb.Table(os.environ["SESSION_TABLE_NAME"])
@@ -46,5 +48,13 @@ def handler(event, context):
             "ttl": int(time.time()) + 86400,
         }
     )
+
+    count = table.query(
+        KeyConditionExpression="room = :r",
+        ExpressionAttributeValues={":r": ROOM},
+        Select="COUNT",
+    )["Count"]
+    broadcast(event, {"type": "viewer_count", "count": count},
+              exclude_connection_id=connection_id)
 
     return {"statusCode": 200, "body": "Connected"}
