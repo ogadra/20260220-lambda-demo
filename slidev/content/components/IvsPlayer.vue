@@ -5,6 +5,7 @@ const videoRef = ref<HTMLVideoElement | null>(null)
 const isLoading = ref(true)
 const hasError = ref(false)
 const errorMessage = ref('')
+const hasStream = ref(false)
 
 let stage: any = null
 
@@ -71,6 +72,7 @@ async function initStage() {
           videoRef.value.srcObject = mediaStream
           videoRef.value.play().catch(() => {})
         }
+        hasStream.value = true
         isLoading.value = false
       }
     )
@@ -81,6 +83,7 @@ async function initStage() {
         if (videoRef.value) {
           videoRef.value.srcObject = null
         }
+        hasStream.value = false
       }
     )
 
@@ -88,6 +91,7 @@ async function initStage() {
       if (videoRef.value) {
         videoRef.value.srcObject = null
       }
+      hasStream.value = false
     })
 
     await stage.join()
@@ -127,6 +131,10 @@ onUnmounted(() => {
       </div>
       <div v-if="hasError" class="ivs-error">
         <p>{{ errorMessage }}</p>
+      </div>
+      <div v-if="!isLoading && !hasError && !hasStream" class="ivs-waiting">
+        <div class="ivs-waiting-icon">📡</div>
+        <p>配信待機中...</p>
       </div>
       <video
         ref="videoRef"
@@ -220,5 +228,33 @@ onUnmounted(() => {
 .ivs-error p {
   font-size: 1rem !important;
   color: #ff6b6b;
+}
+
+.ivs-waiting {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  z-index: 10;
+}
+
+.ivs-waiting-icon {
+  font-size: 4rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.ivs-waiting p {
+  font-size: 1.2rem !important;
+  color: #4ec9b0;
+  margin-top: 1rem;
+  opacity: 0.8;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
 }
 </style>
