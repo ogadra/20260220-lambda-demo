@@ -53,19 +53,12 @@ def handle_poll_get(event, body):
             if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
                 raise
 
-        send_to_caller(event, {
-            "type": "poll_state",
-            "pollId": poll_id,
-            "votes": {},
-            "myChoices": [],
-        })
-
-        # Broadcast to all viewers so they know the poll is now initialized
+        # Broadcast to all connections so they know the poll is initialized
         broadcast(event, json.dumps({
             "type": "poll_state",
             "pollId": poll_id,
             "votes": {},
-        }), exclude_connection_id=connection_id)
+        }))
 
         return {"statusCode": 200, "body": "Poll initialized"}
 
