@@ -92,6 +92,13 @@ li {
 
 ---
 
+<div class="section-divider">
+  <span class="section-number gradient-1">1</span>
+  <span class="section-title">aws-lambda-adapterを使う</span>
+</div>
+
+---
+
 ## 1. aws-lambda-adapterを使う
 
 <div class="center-content">
@@ -187,6 +194,13 @@ li {
 
 ---
 
+<div class="section-divider">
+  <span class="section-number gradient-2">2</span>
+  <span class="section-title">Terraformで管理する</span>
+</div>
+
+---
+
 ## 2. Terraformで作成する
 
 <div class="center-content">
@@ -209,7 +223,7 @@ li {
 
 Dockerイメージを管理/更新できるんですか…？
 
-<div class="center-content">
+</div>
 
 ---
 
@@ -257,7 +271,7 @@ new DockerImageFunction(this, 'App', {
 });
 ```
 
-<div class="center-content">
+</div>
 
 <style>
 pre code {
@@ -314,6 +328,13 @@ pre code {
   font-size: 1.5rem !important;
 }
 </style>
+
+---
+
+<div class="section-divider">
+  <span class="section-number gradient-3">3</span>
+  <span class="section-title">VPC内に作成してEIPをアタッチする</span>
+</div>
 
 ---
 

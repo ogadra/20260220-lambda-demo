@@ -232,6 +232,48 @@ li {
   display: inline-block;
 }
 
+/* セクション区切りスライド */
+.section-divider {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  flex-direction: column;
+  padding-top: 4.5rem;
+}
+
+.section-divider .section-number {
+  font-size: 8rem;
+  font-weight: 900;
+  line-height: 1.1;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.section-divider .gradient-1 {
+  background-image: linear-gradient(135deg, #ff6b6b, #feca57) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+.section-divider .gradient-2 {
+  background-image: linear-gradient(135deg, #48dbfb, #0abde3) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+.section-divider .gradient-3 {
+  background-image: linear-gradient(135deg, #ff9ff3, #f368e0) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+.section-divider .section-title {
+  font-size: 2.49rem;
+  font-weight: bold;
+  color: #4ec9b0;
+  margin-top: 3rem;
+}
+
 /* 出典リンク */
 small {
   display: block;
