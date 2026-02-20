@@ -205,22 +205,11 @@ li {
 
 ## 2. Terraformで作成する
 
+<div class="center-content">
+
 Dockerイメージを管理/更新できるんですか…？
 
-CDKの場合以下
-
-```ts
-new DockerImageFunction(this, 'App', {
-  // Dockerfileがあるディレクトリ
-  code: DockerImageCode.fromImageAsset('./app'),
-});
-```
-
-<style>
-pre code {
-  font-size: 1.35rem !important;
-}
-</style>
+<div class="center-content">
 
 ---
 
@@ -250,6 +239,29 @@ p {
 }
 small {
   font-size: 1.2rem !important;
+}
+</style>
+
+---
+
+## 2. Terraformで作成する
+
+<div class="center-content">
+
+CDKの場合以下
+
+```ts
+new DockerImageFunction(this, 'App', {
+  // Dockerfileがあるディレクトリ
+  code: DockerImageCode.fromImageAsset('./app'),
+});
+```
+
+<div class="center-content">
+
+<style>
+pre code {
+  font-size: 1.35rem !important;
 }
 </style>
 
