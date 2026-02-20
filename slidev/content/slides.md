@@ -72,6 +72,25 @@ li {
 </style>
 ---
 
+## 時間がないのでアンケート！聞きたいテーマは？
+
+<Poll
+  pollId="theme"
+  :options='[{
+    "id":"adapter",
+    "label":"aws-lambda-adapter",
+  }, {
+    "id":"terraform",
+    "label":"TerraformでLambdaを管理する",
+  }, {
+    "id":"eip",
+    "label":"Elastic IPをLambdaにアタッチする",
+  }]'
+  :maxChoices="2"
+/>
+
+---
+
 ## 1. aws-lambda-adapterを使う
 
 <div class="center-content">
@@ -136,17 +155,28 @@ p {
 
 ---
 
-## IaCツール、何使う？
+## IaCツール、何使ってる？
 
-<div class="center-content">
-
-1. AWS SAM
-2. Terraform ( + Lambroll)
-3. CDK
-4. その他
-5. IaC化？なにそれ？美味しいの？
-
-</div>
+<Poll
+  pollId="iac"
+  :options='[{
+    "id":"sam",
+    "label":"AWS SAM",
+  }, {
+    "id":"terraform",
+    "label":"Terraform (+ Lambroll)",
+  }, {
+    "id":"cdk",
+    "label":"AWS CDK",
+  }, {
+    "id":"other",
+    "label":"その他",
+  }, {
+    "id":"none",
+    "label":"IaC化？なにそれ？美味しいの？",
+  }]'
+  :maxChoices="1"
+/>
 
 <style>
 li {

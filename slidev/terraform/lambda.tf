@@ -3,7 +3,7 @@
 data "archive_file" "ws" {
   for_each    = local.ws_handlers
   type        = "zip"
-  source_file = "${path.module}/../ws-lambda/${each.key}.py"
+  source_dir  = "${path.module}/../ws-lambda/${each.key}"
   output_path = "${path.module}/../ws-lambda/${each.key}.zip"
 }
 
@@ -12,7 +12,7 @@ resource "aws_lambda_function" "ws" {
   filename         = data.archive_file.ws[each.key].output_path
   function_name    = "${var.project}-ws-${each.key}"
   role             = aws_iam_role.ws_lambda.arn
-  handler          = "${each.key}.handler"
+  handler          = "handler.handler"
   source_code_hash = data.archive_file.ws[each.key].output_base64sha256
   runtime          = "python3.14"
   timeout          = 10
@@ -21,6 +21,7 @@ resource "aws_lambda_function" "ws" {
     variables = {
       CONNECTIONS_TABLE_NAME = aws_dynamodb_table.ws_connections.name
       SESSION_TABLE_NAME     = aws_dynamodb_table.sessions.name
+      POLL_TABLE_NAME        = aws_dynamodb_table.poll_votes.name
     }
   }
 }

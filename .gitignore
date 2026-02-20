@@ -15,3 +15,6 @@
 # Slidev
 node_modules/
 slidev/dist/
+
+# python
+__pycache__/
