@@ -50,6 +50,22 @@ def _send_to_caller(event, payload):
     )
 
 
+def _send_poll_error(event, poll_id, visitor_id, reason):
+    """Send current poll state with error back to caller so loading spinners are cleared."""
+    meta_key = {"pollId": poll_id, "connectionId": "META"}
+    meta_resp = poll_table.get_item(Key=meta_key)
+    meta = meta_resp.get("Item")
+    votes = {k: int(v) for k, v in meta.get("votes", {}).items()} if meta else {}
+    my_choices = _get_my_choices(poll_id, visitor_id)
+    _send_to_caller(event, {
+        "type": "poll_state",
+        "pollId": poll_id,
+        "votes": votes,
+        "myChoices": my_choices,
+        "error": reason,
+    })
+
+
 def handle_poll_get(event, body):
     poll_id = body.get("pollId")
     visitor_id = body.get("visitorId")
@@ -138,8 +154,17 @@ def handle_poll_vote(event, body):
     ttl_value = int(time.time()) + POLL_TTL_SECONDS
     meta_key = {"pollId": poll_id, "connectionId": "META"}
 
-    # Check max_choices limit via existing vote count for this connection
-    meta = poll_table.get_item(Key=meta_key)["Item"]
+    # Validate choice against META options and max_choices
+    meta = poll_table.get_item(Key=meta_key).get("Item")
+    if not meta:
+        _send_poll_error(event, poll_id, visitor_id, "Poll not initialized")
+        return {"statusCode": 200, "body": "Poll not initialized"}
+
+    meta_options = meta.get("options", [])
+    if meta_options and choice not in meta_options:
+        _send_poll_error(event, poll_id, visitor_id, "Invalid choice")
+        return {"statusCode": 200, "body": "Invalid choice"}
+
     meta_max_choices = meta.get("maxChoices", 1)
 
     existing_votes = poll_table.query(
@@ -150,6 +175,7 @@ def handle_poll_vote(event, body):
         },
     )
     if existing_votes["Count"] >= meta_max_choices:
+        _send_poll_error(event, poll_id, visitor_id, "Max choices reached")
         return {"statusCode": 200, "body": "Max choices reached"}
 
     # Check for duplicate vote on same choice (conditional put)
@@ -271,6 +297,17 @@ def handle_poll_switch(event, body):
 
     ttl_value = int(time.time()) + POLL_TTL_SECONDS
     meta_key = {"pollId": poll_id, "connectionId": "META"}
+
+    # Validate choices against META options
+    meta = poll_table.get_item(Key=meta_key).get("Item")
+    if not meta:
+        _send_poll_error(event, poll_id, visitor_id, "Poll not initialized")
+        return {"statusCode": 200, "body": "Poll not initialized"}
+
+    meta_options = meta.get("options", [])
+    if meta_options and (to_choice not in meta_options or from_choice not in meta_options):
+        _send_poll_error(event, poll_id, visitor_id, "Invalid choice")
+        return {"statusCode": 200, "body": "Invalid choice"}
 
     # Delete the old vote (conditional — must exist)
     from_key = {"pollId": poll_id, "connectionId": f"{visitor_id}#{from_choice}"}
