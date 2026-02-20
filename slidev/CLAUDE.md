@@ -31,7 +31,7 @@ pnpm run build  # ビルド (出力先: ../dist)
 AWS リソース:
 - S3 バケット (OAC 経由のみアクセス)
 - CloudFront (デフォルト TTL: 60秒, SPA ルーティング対応, /ws を API Gateway にルーティング)
-- WAFv2 (レート制限: 10,000 req/5min/IP, 会場 IP 除外可能)
+- WAFv2 (レート制限: 1,000 req/5min/IP, 会場 IP 除外可能)
 - ACM 証明書 (us-east-1, カスタムドメイン用)
 - IVS Real-Time ステージ (配信用トークン自動生成)
 - API Gateway WebSocket (`wss://aws-slide.ogadra.com/ws`)
