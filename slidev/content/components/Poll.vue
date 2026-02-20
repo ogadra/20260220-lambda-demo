@@ -69,6 +69,33 @@ function selectOption(id: string) {
     return;
   }
 
+  // Radio behavior: when maxChoices is 1 and something is already selected,
+  // atomically switch via poll_switch
+  if (props.maxChoices === 1 && selected.value.size > 0) {
+    const current = [...selected.value][0];
+    const next = new Set(selected.value);
+    next.delete(current);
+    selected.value = next;
+    loading.value = new Set([...loading.value, current, id]);
+    const sent = sendWsMessage({
+      type: "poll_switch",
+      pollId: props.pollId,
+      visitorId,
+      fromChoice: current,
+      toChoice: id,
+      options: props.options.map((o) => o.id),
+      maxChoices: props.maxChoices,
+    });
+    if (!sent) {
+      selected.value = new Set([...selected.value, current]);
+      const rollback = new Set(loading.value);
+      rollback.delete(current);
+      rollback.delete(id);
+      loading.value = rollback;
+    }
+    return;
+  }
+
   if (remainingChoices.value <= 0) return;
 
   loading.value = new Set([...loading.value, id]);
@@ -136,7 +163,7 @@ onUnmounted(() => {
         :class="{
           selected: selected.has(opt.id),
           loading: loading.has(opt.id),
-          disabled: selected.has(opt.id) || loading.has(opt.id) || remainingChoices <= 0,
+          disabled: loading.has(opt.id) || (remainingChoices <= 0 && !selected.has(opt.id) && maxChoices !== 1),
         }"
         @click="selectOption(opt.id)"
       >
