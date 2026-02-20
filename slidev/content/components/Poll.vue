@@ -31,7 +31,6 @@ const props = withDefaults(
 const selected = ref<Set<string>>(new Set());
 const loading = ref<Set<string>>(new Set());
 const votes = ref<Record<string, number>>({});
-const pendingSwitch = ref<string | null>(null);
 
 const remainingChoices = computed(
   () => props.maxChoices - selected.value.size - loading.value.size,
@@ -71,22 +70,23 @@ function selectOption(id: string) {
   }
 
   // Radio behavior: when maxChoices is 1 and something is already selected,
-  // unvote the current selection and queue the new one via pendingSwitch
+  // atomically switch via poll_switch
   if (props.maxChoices === 1 && selected.value.size > 0) {
     const current = [...selected.value][0];
-    pendingSwitch.value = id;
     const next = new Set(selected.value);
     next.delete(current);
     selected.value = next;
     loading.value = new Set([...loading.value, current, id]);
     const sent = sendWsMessage({
-      type: "poll_unvote",
+      type: "poll_switch",
       pollId: props.pollId,
       visitorId,
-      choice: current,
+      fromChoice: current,
+      toChoice: id,
+      options: props.options.map((o) => o.id),
+      maxChoices: props.maxChoices,
     });
     if (!sent) {
-      pendingSwitch.value = null;
       selected.value = new Set([...selected.value, current]);
       const rollback = new Set(loading.value);
       rollback.delete(current);
@@ -128,26 +128,6 @@ onMounted(() => {
       if (Array.isArray(data.myChoices)) {
         selected.value = new Set(data.myChoices as string[]);
         loading.value = new Set();
-      }
-
-      // After unvote completes, automatically vote for the pending option
-      if (pendingSwitch.value) {
-        const next = pendingSwitch.value;
-        pendingSwitch.value = null;
-        loading.value = new Set([...loading.value, next]);
-        const sent = sendWsMessage({
-          type: "poll_vote",
-          pollId: props.pollId,
-          visitorId,
-          choice: next,
-          options: props.options.map((o) => o.id),
-          maxChoices: props.maxChoices,
-        });
-        if (!sent) {
-          const rollback = new Set(loading.value);
-          rollback.delete(next);
-          loading.value = rollback;
-        }
       }
     }
   });

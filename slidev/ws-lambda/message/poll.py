@@ -223,3 +223,96 @@ def handle_poll_unvote(event, body):
     })
 
     return {"statusCode": 200, "body": "Unvoted"}
+
+
+def handle_poll_switch(event, body):
+    connection_id = event["requestContext"]["connectionId"]
+    poll_id = body.get("pollId")
+    visitor_id = body.get("visitorId")
+    from_choice = body.get("fromChoice")
+    to_choice = body.get("toChoice")
+    options = body.get("options", [])
+    max_choices = body.get("maxChoices", 1)
+
+    if (
+        not _validate_string(poll_id)
+        or not _validate_string(visitor_id)
+        or not _validate_string(from_choice)
+        or not _validate_string(to_choice)
+    ):
+        return {"statusCode": 200, "body": "Invalid poll_switch"}
+
+    ttl_value = int(time.time()) + POLL_TTL_SECONDS
+    meta_key = {"pollId": poll_id, "connectionId": "META"}
+
+    # Ensure META exists
+    try:
+        poll_table.put_item(
+            Item={
+                "pollId": poll_id,
+                "connectionId": "META",
+                "options": options,
+                "maxChoices": max_choices,
+                "votes": {},
+            },
+            ConditionExpression="attribute_not_exists(pollId)",
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+            raise
+
+    # Delete the old vote (conditional — must exist)
+    from_key = {"pollId": poll_id, "connectionId": f"{visitor_id}#{from_choice}"}
+    try:
+        poll_table.delete_item(
+            Key=from_key,
+            ConditionExpression="attribute_exists(pollId)",
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            return {"statusCode": 200, "body": "Old vote not found"}
+        raise
+
+    # Create the new vote (conditional — must not already exist)
+    to_key = {"pollId": poll_id, "connectionId": f"{visitor_id}#{to_choice}"}
+    try:
+        poll_table.put_item(
+            Item={**to_key, "ttl": ttl_value},
+            ConditionExpression="attribute_not_exists(pollId)",
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            # Restore the old vote since new one already exists
+            poll_table.put_item(Item={**from_key, "ttl": ttl_value})
+            return {"statusCode": 200, "body": "Already voted for target choice"}
+        raise
+
+    # Atomic update META votes: fromChoice -1, toChoice +1
+    poll_table.update_item(
+        Key=meta_key,
+        UpdateExpression="ADD votes.#from_c :dec, votes.#to_c :inc",
+        ExpressionAttributeNames={"#from_c": from_choice, "#to_c": to_choice},
+        ExpressionAttributeValues={":dec": -1, ":inc": 1},
+    )
+
+    # Fetch updated META and broadcast
+    updated_meta = poll_table.get_item(Key=meta_key)["Item"]
+    votes = {k: int(v) for k, v in updated_meta.get("votes", {}).items()}
+    state_msg = json.dumps({
+        "type": "poll_state",
+        "pollId": poll_id,
+        "votes": votes,
+    })
+
+    broadcast(event, state_msg, exclude_connection_id=connection_id)
+
+    # Send caller their updated myChoices
+    my_choices = _get_my_choices(poll_id, visitor_id)
+    _send_to_caller(event, {
+        "type": "poll_state",
+        "pollId": poll_id,
+        "votes": votes,
+        "myChoices": my_choices,
+    })
+
+    return {"statusCode": 200, "body": "Switched"}
