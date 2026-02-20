@@ -449,6 +449,22 @@ li {
 <IvsPlayer />
 
 ---
+
+## デモについて
+
+全てAWSリソースで作成しました。
+
+Lambdaは5つ使ってます！探してみてね
+
+https://github.com/ogadra/20260220-lambda-demo
+
+※ 数日後に本ページは削除予定です。
+
+登壇資料は下記からご覧ください。
+
+https://slide.ogadra.com/lambda-as-an-ecs-alternative
+
+---
 layout: image-x
 image: https://media.ogadra.com/misskey/drive/b7f08bb1-df92-45c3-855d-521eb9859015.gif
 imageOrder: 2
