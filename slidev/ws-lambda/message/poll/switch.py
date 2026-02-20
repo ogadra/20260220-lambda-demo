@@ -3,7 +3,7 @@ import time
 from botocore.exceptions import ClientError
 
 from broadcast import POLL_TTL_SECONDS, poll_table
-from poll.common import broadcast_and_reply, validate_meta_and_choices, validate_string
+from poll.common import broadcast_and_reply, validate_meta_and_choices, validate_strings
 
 
 def handle_poll_switch(event, body):
@@ -13,12 +13,7 @@ def handle_poll_switch(event, body):
     from_choice = body.get("fromChoice")
     to_choice = body.get("toChoice")
 
-    if (
-        not validate_string(poll_id)
-        or not validate_string(visitor_id)
-        or not validate_string(from_choice)
-        or not validate_string(to_choice)
-    ):
+    if not validate_strings(poll_id, visitor_id, from_choice, to_choice):
         return {"statusCode": 200, "body": "Invalid poll_switch"}
 
     _, error = validate_meta_and_choices(

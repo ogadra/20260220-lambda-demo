@@ -8,7 +8,7 @@ from poll.common import (
     get_my_choices,
     get_votes_from_meta,
     send_to_caller,
-    validate_string,
+    validate_strings,
 )
 
 
@@ -17,7 +17,7 @@ def handle_poll_get(event, body):
     visitor_id = body.get("visitorId")
     options = body.get("options", [])
     max_choices = body.get("maxChoices", 1)
-    if not validate_string(poll_id) or not validate_string(visitor_id):
+    if not validate_strings(poll_id, visitor_id):
         return {"statusCode": 200, "body": "Invalid poll_get"}
 
     connection_id = event["requestContext"]["connectionId"]

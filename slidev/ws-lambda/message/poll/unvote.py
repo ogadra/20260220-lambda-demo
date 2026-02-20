@@ -1,7 +1,7 @@
 from botocore.exceptions import ClientError
 
 from broadcast import poll_table
-from poll.common import broadcast_and_reply, validate_string
+from poll.common import broadcast_and_reply, validate_strings
 
 
 def handle_poll_unvote(event, body):
@@ -9,11 +9,7 @@ def handle_poll_unvote(event, body):
     visitor_id = body.get("visitorId")
     choice = body.get("choice")
 
-    if (
-        not validate_string(poll_id)
-        or not validate_string(visitor_id)
-        or not validate_string(choice)
-    ):
+    if not validate_strings(poll_id, visitor_id, choice):
         return {"statusCode": 200, "body": "Invalid poll_unvote"}
 
     vote_key = {"pollId": poll_id, "connectionId": f"{visitor_id}#{choice}"}

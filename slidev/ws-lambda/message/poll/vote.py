@@ -7,7 +7,7 @@ from poll.common import (
     broadcast_and_reply,
     send_poll_error,
     validate_meta_and_choices,
-    validate_string,
+    validate_strings,
 )
 
 
@@ -17,11 +17,7 @@ def handle_poll_vote(event, body):
     visitor_id = body.get("visitorId")
     choice = body.get("choice")
 
-    if (
-        not validate_string(poll_id)
-        or not validate_string(visitor_id)
-        or not validate_string(choice)
-    ):
+    if not validate_strings(poll_id, visitor_id, choice):
         return {"statusCode": 200, "body": "Invalid poll_vote"}
 
     meta, error = validate_meta_and_choices(event, poll_id, visitor_id, [choice])

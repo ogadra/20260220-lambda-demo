@@ -8,8 +8,8 @@ from broadcast import POLL_TTL_SECONDS, ROOM, broadcast, connections_table, poll
 MAX_INPUT_LEN = 256
 
 
-def validate_string(value, max_len=MAX_INPUT_LEN):
-    return isinstance(value, str) and 0 < len(value) <= max_len
+def validate_strings(*values, max_len=MAX_INPUT_LEN):
+    return all(isinstance(v, str) and 0 < len(v) <= max_len for v in values)
 
 
 def get_meta(poll_id):
