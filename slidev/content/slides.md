@@ -163,6 +163,13 @@ p {
 
 ---
 
+<div class="section-divider">
+  <span class="section-number gradient-2">2</span>
+  <span class="section-title">Terraformで管理する</span>
+</div>
+
+---
+
 ## IaCツール、何使ってる？
 
 <Poll
@@ -194,18 +201,11 @@ li {
 
 ---
 
-<div class="section-divider">
-  <span class="section-number gradient-2">2</span>
-  <span class="section-title">Terraformで管理する</span>
-</div>
-
----
-
 ## 2. Terraformで作成する
 
 <div class="center-content">
 
-<span style="font-size: 2.5rem;">
+<span style="font-size: 2.5rem; margin-bottom: 3rem;">
   Terraformをおすすめする理由
 </span>
 
@@ -260,9 +260,7 @@ small {
 
 ## 2. Terraformで作成する
 
-<div class="center-content">
-
-CDKの場合以下
+CDKの場合
 
 ```ts
 new DockerImageFunction(this, 'App', {
@@ -271,9 +269,11 @@ new DockerImageFunction(this, 'App', {
 });
 ```
 
-</div>
-
 <style>
+
+p {
+  font-size: 2rem !important;
+}
 pre code {
   font-size: 1.35rem !important;
 }
