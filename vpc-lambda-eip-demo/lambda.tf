@@ -36,7 +36,7 @@ resource "aws_lambda_function" "main" {
   handler                        = "lambda_function.handler"
   source_code_hash               = data.archive_file.lambda.output_base64sha256
   runtime                        = "python3.14"
-  timeout                        = 30
+  timeout                        = 10
   reserved_concurrent_executions = 3
 
   vpc_config {

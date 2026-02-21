@@ -2,7 +2,7 @@ import socket
 import urllib.request
 import urllib.error
 
-socket.setdefaulttimeout(2)
+socket.setdefaulttimeout(1)
 
 
 def handler(event, context):
